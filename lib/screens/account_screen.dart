@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:taskgenius/screens/splash_screen.dart';
+import 'package:taskgenius/services/notification_service.dart';
 import 'package:taskgenius/state/auth_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 import 'package:taskgenius/utils/theme_switch.dart';
@@ -22,7 +24,9 @@ class _AccountScreenState extends State<AccountScreen> {
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
-
+  bool _enableReminders = true;
+  bool _enableDeadlineAlerts = true;
+  bool _enableDailyDigest = true;
   bool _isUploading = false;
 
   @override
@@ -32,6 +36,85 @@ class _AccountScreenState extends State<AccountScreen> {
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadNotificationPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _enableReminders = prefs.getBool('enable_reminders') ?? true;
+      _enableDeadlineAlerts = prefs.getBool('enable_deadline_alerts') ?? true;
+      _enableDailyDigest = prefs.getBool('enable_daily_digest') ?? true;
+    });
+  }
+
+  // Call this in initState
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationPreferences();
+  }
+
+  void _showNotificationSettingsDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Notification Settings'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Task Reminders'),
+                      subtitle: const Text('Get notified before tasks are due'),
+                      value: _enableReminders,
+                      onChanged: (value) async {
+                        setState(() {
+                          _enableReminders = value;
+                        });
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('enable_reminders', value);
+                      },
+                    ),
+                    SwitchListTile(
+                      title: const Text('Deadline Alerts'),
+                      subtitle: const Text('Get notified when tasks are due'),
+                      value: _enableDeadlineAlerts,
+                      onChanged: (value) async {
+                        setState(() {
+                          _enableDeadlineAlerts = value;
+                        });
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('enable_deadline_alerts', value);
+                      },
+                    ),
+                    SwitchListTile(
+                      title: const Text('Daily Task Digest'),
+                      subtitle: const Text(
+                        'Get a morning summary of your tasks',
+                      ),
+                      value: _enableDailyDigest,
+                      onChanged: (value) async {
+                        setState(() {
+                          _enableDailyDigest = value;
+                        });
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('enable_daily_digest', value);
+                      },
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close'),
+                  ),
+                ],
+              );
+            },
+          ),
+    );
   }
 
   @override
@@ -320,17 +403,26 @@ class _AccountScreenState extends State<AccountScreen> {
                         children: [
                           _buildSettingsItem(
                             context,
+                            Icons.notifications_active,
+                            'Test Notification',
+                            'Send a test notification immediately',
+                            () {
+                              NotificationService.instance
+                                  .showTestNotification();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Test notification sent!'),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildSettingsItem(
+                            context,
                             Icons.notifications,
                             'Notifications',
                             'Configure your notification preferences',
                             () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Notifications settings coming soon!',
-                                  ),
-                                ),
-                              );
+                              _showNotificationSettingsDialog(context);
                             },
                           ),
                           const Divider(height: 1),

@@ -52,15 +52,21 @@ class _LoginScreenState extends State<LoginScreen> {
   // Login function
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
+      // Hide keyboard
+      FocusScope.of(context).unfocus();
+
       // Get auth provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      // Clear any previous errors when starting a new login attempt
+      authProvider.clearError();
 
       // Attempt login
       final success = await authProvider.login(
         _emailController.text.trim(),
         _passwordController.text,
       );
-      // If login successful and widget is still mounted, force app rebuild
+      // If login successful and widget is still mounted, navigate to home
       if (success && mounted) {
         // Add a small delay to allow state to propagate
         await Future.delayed(const Duration(milliseconds: 300));
@@ -83,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor,
               image: const DecorationImage(
-                image: AssetImage('assets/images/login_bg.jpg'),
+                image: AssetImage('assets/bg.jpeg'),
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken),
               ),
@@ -177,6 +183,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                             color: Colors.red.shade700,
                                           ),
                                         ),
+                                      ),
+                                      // Add a close button to manually dismiss errors
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.close,
+                                          color: Colors.red.shade700,
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          authProvider.clearError();
+                                        },
                                       ),
                                     ],
                                   ),

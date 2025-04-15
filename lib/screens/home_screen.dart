@@ -21,6 +21,16 @@ class _HomeScreenState extends State<HomeScreen> {
   // Controller for the search field
   final TextEditingController _searchController = TextEditingController();
 
+@override
+void initState() {
+  super.initState();
+  
+  // Schedule daily digest when the home screen loads
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    taskProvider.scheduleDailyDigest();
+  });
+}
   @override
   void dispose() {
     _searchController.dispose();

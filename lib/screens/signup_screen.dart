@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:taskgenius/screens/home_screen.dart';
 import 'package:taskgenius/screens/login_screen.dart';
 import 'package:taskgenius/state/auth_provider.dart';
 
@@ -73,29 +72,20 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-  // Terms validator
-  String? _validateTerms(bool? value) {
-    if (value != true) {
-      return 'You must accept the terms and conditions';
-    }
-    return null;
-  }
 
   // Register function
   Future<void> _register() async {
-    if (_formKey.currentState!.validate()) {
-      if (!_acceptTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please accept the terms and conditions'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
+    // First validate the form
+    if (_formKey.currentState!.validate()) {      
+
+      // Hide keyboard
+      FocusScope.of(context).unfocus();
 
       // Get auth provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      // Clear any previous errors when starting a new registration attempt
+      authProvider.clearError();
 
       // Attempt registration
       final success = await authProvider.register(
@@ -103,13 +93,26 @@ class _SignupScreenState extends State<SignupScreen> {
         _emailController.text.trim(),
         _passwordController.text,
       );
-      // If login successful and widget is still mounted, force app rebuild
-      if (success && mounted) {
-        // Add a small delay to allow state to propagate
-        await Future.delayed(const Duration(milliseconds: 300));
 
-        // Force app to rebuild from root by triggering a rebuild
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+      // If registration successful and widget is still mounted
+      if (success && mounted) {
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully! Please log in.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Wait a moment for the snackbar to be visible
+        await Future.delayed(const Duration(milliseconds: 1500));
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
       }
     }
   }
@@ -126,7 +129,7 @@ class _SignupScreenState extends State<SignupScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor,
               image: const DecorationImage(
-                image: AssetImage('assets/images/signup_bg.jpg'),
+                image: AssetImage('assets/bg.jpeg'),
                 fit: BoxFit.cover,
                 colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken),
               ),
@@ -195,7 +198,6 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               const SizedBox(height: 32),
 
-                              // Error message if any
                               if (authProvider.error != null) ...[
                                 Container(
                                   padding: const EdgeInsets.all(16),
@@ -220,6 +222,17 @@ class _SignupScreenState extends State<SignupScreen> {
                                             color: Colors.red.shade700,
                                           ),
                                         ),
+                                      ),
+                                      // Add a close button to manually dismiss errors
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.close,
+                                          color: Colors.red.shade700,
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          authProvider.clearError();
+                                        },
                                       ),
                                     ],
                                   ),

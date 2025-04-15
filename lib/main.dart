@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:taskgenius/firebase_options.dart';
+import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/screens/add_task_screen.dart';
 import 'package:taskgenius/screens/dashboard_screen.dart';
 import 'package:taskgenius/screens/home_screen.dart';
@@ -11,10 +13,13 @@ import 'package:taskgenius/state/task_provider.dart';
 import 'package:taskgenius/state/auth_provider.dart';
 import 'package:taskgenius/state/theme_provider.dart';
 import 'package:taskgenius/utils/theme_config.dart';
+import 'package:taskgenius/services/notification_service.dart';
 
 // Initialize Firebase
 Future<void> initializeFirebase() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await NotificationService.instance.initialize();
+
 }
 
 class TaskManagerApp extends StatefulWidget {
@@ -54,17 +59,17 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
         builder: (context, themeProvider, child) {
           return MaterialApp(
             title: 'AI Task Manager',
-             theme: AppTheme.lightTheme,
-                darkTheme: AppTheme.darkTheme,
-                themeMode: themeProvider.themeMode,
-            // Add named routes for navigation
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeProvider.themeMode,
+            debugShowCheckedModeBanner: false,
             routes: {
               '/': (context) => const AppRouter(),
               '/home': (context) => const MainAppScaffold(),
             },
             initialRoute: '/',
           );
-        }
+        },
       ),
     );
   }
@@ -170,6 +175,12 @@ class _MainAppScaffoldState extends State<MainAppScaffold> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Register Hive adapters
+  Hive.registerAdapter(TaskAdapter());
+
   await initializeFirebase();
   runApp(const TaskManagerApp());
 }
