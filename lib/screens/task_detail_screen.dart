@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:taskgenius/main.dart';
 import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/services/ai_service.dart';
 import 'package:taskgenius/state/task_provider.dart';

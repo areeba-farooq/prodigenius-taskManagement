@@ -1,12 +1,13 @@
-
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskgenius/models/notification.dart';
+import 'package:taskgenius/state/notification_provider.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:taskgenius/models/task.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:ui'; 
+import 'dart:ui';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -21,13 +22,20 @@ class NotificationService {
   }
 
   NotificationService._();
+  // Add this field to the NotificationService class
+  late NotificationProvider _notificationProvider;
+
+  // Add this method to the NotificationService class
+  void setNotificationProvider(NotificationProvider provider) {
+    _notificationProvider = provider;
+      debugPrint("Notification provider set successfully inside service");
+
+  }
 
   Future<void> initialize() async {
     // Initialize for Android
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings(
-          '@mipmap/ic_launcher',
-        ); 
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     // Initialize for iOS
     final DarwinInitializationSettings initializationSettingsIOS =
@@ -108,7 +116,7 @@ class NotificationService {
   // Schedule a notification for a specific time
   Future<void> scheduleTaskNotification(
     Task task, {
-    int minutesBefore = 0,
+    int minutesBefore = 30,
   }) async {
     // Check if reminders are enabled
     if (!(await areRemindersEnabled())) {
@@ -192,13 +200,20 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: task.id, // Pass the task ID as the payload
     );
+    // After scheduling
+    await _addToNotificationProvider(
+      title,
+      body,
+      NotificationType.task,
+      task.id,
+    );
 
     debugPrint(
       "Scheduled notification for task: ${task.title} at ${scheduledDate.toString()}",
     );
   }
 
-  // Test notification (for debugging)
+  // In notification_service.dart
   Future<void> showTestNotification() async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
@@ -221,9 +236,26 @@ class NotificationService {
       notificationDetails,
     );
 
+  
+
     debugPrint("Test notification shown");
   }
 
+ // Update to the testNotificationFlow method
+Future<void> testNotificationFlow() async {
+  // Show a system notification
+  await showTestNotification();
+  
+  // Then add to the notification provider
+  await _addToNotificationProvider(
+    'Test Notification',
+    'This is a test notification to verify the notification flow works correctly.',
+    NotificationType.task,
+    null,
+  );
+
+  debugPrint("Test notification flow complete. Check notification screen and unread count.");
+}
   // Schedule deadline notification (for when the task is due)
   Future<void> scheduleDeadlineNotification(Task task) async {
     // Check if deadline alerts are enabled
@@ -280,6 +312,13 @@ class NotificationService {
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       payload: task.id,
+    );
+    // After scheduling
+    await _addToNotificationProvider(
+      title,
+      body,
+      NotificationType.deadline,
+      task.id,
     );
   }
 
@@ -370,12 +409,49 @@ class NotificationService {
       matchDateTimeComponents:
           DateTimeComponents.time, // Repeats at the same time every day
     );
-
+    // After scheduling
+    // In scheduleDailyDigest
+    await _addToNotificationProvider(
+      title,
+      body,
+      NotificationType.digest,
+      null,
+    );
     debugPrint(
       "Scheduled daily digest notification for ${scheduledTime.toString()}",
     );
   }
+  // Update to _addToNotificationProvider method in NotificationService class
+Future<void> _addToNotificationProvider(
+  String title,
+  String body,
+  NotificationType type,
+  String? taskId,
+) async {
+  try {
+    // Check if _notificationProvider is initialized
+    if (_notificationProvider == null) {
+      debugPrint("ERROR: NotificationProvider not set! Cannot add notification");
+      return;
+    }
+    
+    debugPrint("Creating notification with title: $title");
+    final notification = AppNotification(
+      id: '$type-${taskId ?? 'general'}-${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      body: body,
+      timestamp: DateTime.now(),
+      taskId: taskId,
+      type: type,
+    );
 
+    debugPrint("Adding notification to provider...");
+    await _notificationProvider.addNotification(notification);
+    debugPrint("Notification added successfully!");
+  } catch (e) {
+    debugPrint("Error adding notification to provider: $e");
+  }
+}
   // Get color for priority (for notification LED color)
   int _getPriorityColor(String priority) {
     switch (priority) {

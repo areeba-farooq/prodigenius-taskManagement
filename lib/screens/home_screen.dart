@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/screens/add_task_screen.dart';
+import 'package:taskgenius/screens/notification_screen.dart';
 import 'package:taskgenius/screens/task_detail_screen.dart';
+import 'package:taskgenius/state/notification_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -21,16 +23,17 @@ class _HomeScreenState extends State<HomeScreen> {
   // Controller for the search field
   final TextEditingController _searchController = TextEditingController();
 
-@override
-void initState() {
-  super.initState();
-  
-  // Schedule daily digest when the home screen loads
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-    taskProvider.scheduleDailyDigest();
-  });
-}
+  @override
+  void initState() {
+    super.initState();
+
+    // Schedule daily digest when the home screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+      taskProvider.scheduleDailyDigest();
+    });
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -99,9 +102,59 @@ void initState() {
         title: const Text('Task Genius'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: Stack(
+              children: [
+                const Icon(Icons.notifications),
+                // Only show the badge if there are new notifications since the last time the user viewed
+                if (Provider.of<NotificationProvider>(
+                  context,
+                ).hasNewNotifications)
+                  Positioned(
+                    right: -3,
+                    top: -3,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Text(
+                        Provider.of<NotificationProvider>(context).unreadCount >
+                                9
+                            ? '9+'
+                            : Provider.of<NotificationProvider>(
+                              context,
+                            ).unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             onPressed: () {
-              // Handle notifications
+              // Update the last viewed timestamp when the user taps the notification icon
+              Provider.of<NotificationProvider>(
+                context,
+                listen: false,
+              ).updateLastViewed();
+
+              // Navigate to the notification screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationScreen(),
+                ),
+              );
             },
           ),
         ],

@@ -6,9 +6,9 @@ class ThemeSwitch extends StatelessWidget {
   final bool showLabel;
   
   const ThemeSwitch({
-    Key? key,
+    super.key,
     this.showLabel = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

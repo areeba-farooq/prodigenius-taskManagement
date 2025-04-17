@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:taskgenius/screens/home_screen.dart';
 import 'package:taskgenius/screens/signup_screen.dart';
 import 'package:taskgenius/state/auth_provider.dart';
 

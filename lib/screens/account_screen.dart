@@ -3,10 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskgenius/models/notification.dart';
 import 'dart:io';
 import 'package:taskgenius/screens/splash_screen.dart';
 import 'package:taskgenius/services/notification_service.dart';
 import 'package:taskgenius/state/auth_provider.dart';
+import 'package:taskgenius/state/notification_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 import 'package:taskgenius/utils/theme_switch.dart';
 
@@ -404,14 +406,16 @@ class _AccountScreenState extends State<AccountScreen> {
                           _buildSettingsItem(
                             context,
                             Icons.notifications_active,
-                            'Test Notification',
-                            'Send a test notification immediately',
+                            'Test Full Notification',
+                            'Test the complete notification flow',
                             () {
                               NotificationService.instance
-                                  .showTestNotification();
+                                  .testNotificationFlow();
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Test notification sent!'),
+                                  content: Text(
+                                    'Test notification flow triggered!',
+                                  ),
                                 ),
                               );
                             },

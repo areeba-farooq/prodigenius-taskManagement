@@ -9,6 +9,7 @@ import 'package:taskgenius/screens/dashboard_screen.dart';
 import 'package:taskgenius/screens/home_screen.dart';
 import 'package:taskgenius/screens/account_screen.dart';
 import 'package:taskgenius/screens/splash_screen.dart';
+import 'package:taskgenius/state/notification_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 import 'package:taskgenius/state/auth_provider.dart';
 import 'package:taskgenius/state/theme_provider.dart';
@@ -18,8 +19,7 @@ import 'package:taskgenius/services/notification_service.dart';
 // Initialize Firebase
 Future<void> initializeFirebase() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await NotificationService.instance.initialize();
-
+  await NotificationService.instance.initialize();
 }
 
 class TaskManagerApp extends StatefulWidget {
@@ -45,6 +45,8 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
       _pageController.jumpToPage(index);
     });
   }
+static bool _providerConnected = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,7 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
 
         ChangeNotifierProvider(create: (context) => AuthProvider()),
         ChangeNotifierProvider(create: (context) => TaskProvider()),
+        ChangeNotifierProvider(create: (context) => NotificationProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -68,7 +71,27 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
               '/home': (context) => const MainAppScaffold(),
             },
             initialRoute: '/',
-          );
+            // Key change: Connect providers after the app is built
+            builder: (context, child) {
+  // Use a static flag to ensure this only runs once
+  if (!_providerConnected) {
+    _providerConnected = true;
+    
+    // Schedule this for after the frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint("Setting notification provider (one-time setup)...");
+      final notificationProvider = Provider.of<NotificationProvider>(
+        context,
+        listen: false,
+      );
+      NotificationService.instance.setNotificationProvider(
+        notificationProvider,
+      );
+    });
+  }
+  return child!;
+},
+         );
         },
       ),
     );
@@ -182,5 +205,6 @@ void main() async {
   Hive.registerAdapter(TaskAdapter());
 
   await initializeFirebase();
+
   runApp(const TaskManagerApp());
 }
