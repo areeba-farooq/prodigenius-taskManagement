@@ -1,7 +1,8 @@
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
-part 'task.g.dart'; // This will be auto-generated
+part 'task.g.dart';//flutter pub run build_runner build
+
 
 @HiveType(typeId: 0)
 class Task extends HiveObject {
@@ -25,6 +26,12 @@ class Task extends HiveObject {
 
   @HiveField(6)
   bool isCompleted;
+  
+  @HiveField(7)
+  final int complexityLevel; // 1-5 scale where 5 is most complex
+  
+  @HiveField(8)
+  final Duration estimatedDuration; // Estimated time to complete the task
 
   Task({
     String? id,
@@ -34,6 +41,8 @@ class Task extends HiveObject {
     required this.urgencyLevel,
     required this.priority,
     this.isCompleted = false,
+    this.complexityLevel = 3, // Default to medium complexity
+    this.estimatedDuration = const Duration(minutes: 30), // Default to 30 minutes
   }) : id = id ?? const Uuid().v4(); // Auto-generate ID if not provided
 
   // Create a copy of this task with updated fields
@@ -44,6 +53,8 @@ class Task extends HiveObject {
     int? urgencyLevel,
     String? priority,
     bool? isCompleted,
+    int? complexityLevel,
+    Duration? estimatedDuration,
   }) {
     return Task(
       id: id, // Keep the same ID
@@ -53,6 +64,8 @@ class Task extends HiveObject {
       urgencyLevel: urgencyLevel ?? this.urgencyLevel,
       priority: priority ?? this.priority,
       isCompleted: isCompleted ?? this.isCompleted,
+      complexityLevel: complexityLevel ?? this.complexityLevel,
+      estimatedDuration: estimatedDuration ?? this.estimatedDuration,
     );
   }
 
@@ -69,6 +82,10 @@ class Task extends HiveObject {
       urgencyLevel: map['urgencyLevel'],
       priority: map['priority'],
       isCompleted: map['isCompleted'] ?? false,
+      complexityLevel: map['complexityLevel'] ?? 3,
+      estimatedDuration: map['estimatedDuration'] != null 
+          ? Duration(minutes: map['estimatedDuration']) 
+          : const Duration(minutes: 30),
     );
   }
 
@@ -82,6 +99,8 @@ class Task extends HiveObject {
       'urgencyLevel': urgencyLevel,
       'priority': priority,
       'isCompleted': isCompleted,
+      'complexityLevel': complexityLevel,
+      'estimatedDuration': estimatedDuration.inMinutes,
     };
   }
 }

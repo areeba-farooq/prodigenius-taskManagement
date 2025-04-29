@@ -4,6 +4,7 @@ import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/screens/add_task_screen.dart';
 import 'package:taskgenius/screens/notification_screen.dart';
 import 'package:taskgenius/screens/task_detail_screen.dart';
+import 'package:taskgenius/services/ai_service.dart';
 import 'package:taskgenius/state/notification_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 
@@ -357,6 +358,23 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Icon(Icons.timer, size: 12),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    DurationEstimator.formatDuration(
+                                      task.estimatedDuration,
+                                    ),
+                                    style: const TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -470,34 +488,57 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : FontWeight.bold,
                               ),
                             ),
-                            subtitle: Row(
+                            subtitle: Column(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8.0,
-                                    vertical: 2.0,
-                                  ),
-                                  margin: const EdgeInsets.only(right: 8.0),
-                                  decoration: BoxDecoration(
-                                    color: _getCategoryColor(
-                                      task.category,
-                                    ).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    task.category,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: _getCategoryColor(task.category),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0,
+                                        vertical: 2.0,
+                                      ),
+                                      margin: const EdgeInsets.only(right: 8.0),
+                                      decoration: BoxDecoration(
+                                        color: _getCategoryColor(
+                                          task.category,
+                                        ).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        task.category,
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: _getCategoryColor(
+                                            task.category,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                    Text(
+                                      _formatDate(task.dueDate),
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  _formatDate(task.dueDate),
-                                  style: const TextStyle(fontSize: 12),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.timer, size: 12),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      DurationEstimator.formatDuration(
+                                        task.estimatedDuration,
+                                      ),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
+
                             trailing: Container(
                               width: 16,
                               height: 16,

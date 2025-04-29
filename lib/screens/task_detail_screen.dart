@@ -21,6 +21,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late int _urgencyLevel;
   late String _predictedPriority;
   late bool _isCompleted;
+  late Duration _estimatedDuration;
+  late int _complexityLevel;
 
   @override
   void initState() {
@@ -32,28 +34,57 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     _urgencyLevel = widget.task.urgencyLevel;
     _predictedPriority = widget.task.priority;
     _isCompleted = widget.task.isCompleted;
-    
+    _estimatedDuration = widget.task.estimatedDuration;
+    _complexityLevel = widget.task.complexityLevel;
+
     // Initialize ML model
-    _initML();
+    // _initML();
+    _initModels();
   }
 
-  Future<void> _initML() async {
+  Future<void> _initModels() async {
     try {
       await PriorityPredictor.initModel();
-      _updatePredictedPriority();
+      await DurationEstimator.initModel();
+      _updatePredictions();
     } catch (e) {
-      print("Error initializing ML: $e");
+      print("Error initializing ML models: $e");
     }
   }
 
-  void _updatePredictedPriority() {
+  void _updatePredictions() {
     setState(() {
+      // Update priority prediction
       _predictedPriority = PriorityPredictor.predictPriority(
         _selectedDate,
         _urgencyLevel,
       );
+
+      // Update duration estimation
+      _estimatedDuration = DurationEstimator.estimateTaskDuration(
+        _selectedCategory,
+        _complexityLevel,
+      );
     });
   }
+
+  // Future<void> _initML() async {
+  //   try {
+  //     await PriorityPredictor.initModel();
+  //     _updatePredictedPriority();
+  //   } catch (e) {
+  //     print("Error initializing ML: $e");
+  //   }
+  // }
+
+  // void _updatePredictedPriority() {
+  //   setState(() {
+  //     _predictedPriority = PriorityPredictor.predictPriority(
+  //       _selectedDate,
+  //       _urgencyLevel,
+  //     );
+  //   });
+  // }
 
   @override
   void dispose() {
@@ -72,7 +103,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       setState(() {
         _selectedDate = picked;
         // Update priority prediction when date changes
-        _updatePredictedPriority();
+        // _updatePredictedPriority();
+        _updatePredictions();
       });
     }
   }
@@ -91,25 +123,33 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               // Show confirmation dialog before deleting
               showDialog(
                 context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Delete Task'),
-                  content: const Text('Are you sure you want to delete this task?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Delete Task'),
+                      content: const Text(
+                        'Are you sure you want to delete this task?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // Delete task and navigate back
+                            taskProvider.deleteTask(widget.task.id);
+                            Navigator.pop(context); // Close dialog
+                            Navigator.pop(
+                              context,
+                            ); // Go back to previous screen
+                          },
+                          child: const Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () {
-                        // Delete task and navigate back
-                        taskProvider.deleteTask(widget.task.id);
-                        Navigator.pop(context); // Close dialog
-                        Navigator.pop(context); // Go back to previous screen
-                      },
-                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
               );
             },
           ),
@@ -143,9 +183,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Title field
                 TextFormField(
                   controller: _titleController,
@@ -160,9 +200,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Category dropdown
                 DropdownButtonFormField<String>(
                   decoration: const InputDecoration(
@@ -170,23 +210,25 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     border: OutlineInputBorder(),
                   ),
                   value: _selectedCategory,
-                  items: taskProvider.categories.map((String category) {
-                    return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(category),
-                    );
-                  }).toList(),
+                  items:
+                      taskProvider.categories.map((String category) {
+                        return DropdownMenuItem<String>(
+                          value: category,
+                          child: Text(category),
+                        );
+                      }).toList(),
                   onChanged: (String? newValue) {
                     if (newValue != null) {
                       setState(() {
                         _selectedCategory = newValue;
+                        _updatePredictions();
                       });
                     }
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Due date selector
                 Row(
                   children: [
@@ -202,14 +244,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Urgency level slider
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Urgency Level:', style: TextStyle(fontSize: 16)),
+                    const Text(
+                      'Urgency Level:',
+                      style: TextStyle(fontSize: 16),
+                    ),
                     Slider(
                       value: _urgencyLevel.toDouble(),
                       min: 1,
@@ -220,7 +265,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                         setState(() {
                           _urgencyLevel = value.round();
                           // Update priority prediction when urgency changes
-                          _updatePredictedPriority();
+                          // _updatePredictedPriority();
+                          _updatePredictions();
                         });
                       },
                     ),
@@ -230,9 +276,38 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+                // Complexity level slider
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Complexity Level:',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    Slider(
+                      value: _complexityLevel.toDouble(),
+                      min: 1,
+                      max: 5,
+                      divisions: 4,
+                      label: _complexityLevel.toString(),
+                      onChanged: (double value) {
+                        setState(() {
+                          _complexityLevel = value.round();
+                          // Update duration estimation when complexity changes
+                          _updatePredictions();
+                        });
+                      },
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [Text('Simple'), Text('Complex')],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
                 // AI-suggested priority card
                 Card(
                   elevation: 3,
@@ -269,9 +344,49 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                   ),
                 ),
-                
+                const SizedBox(height: 16),
+
+                // Estimated duration card
+                Card(
+                  elevation: 3,
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'AI-Estimated Duration:',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                DurationEstimator.formatDuration(
+                                  _estimatedDuration,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: Theme.of(context).primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
-                
+
                 // Save button
                 SizedBox(
                   width: double.infinity,
@@ -288,6 +403,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           urgencyLevel: _urgencyLevel,
                           priority: _predictedPriority,
                           isCompleted: _isCompleted,
+                          complexityLevel: _complexityLevel,
+                          estimatedDuration: _estimatedDuration,
                         );
 
                         // Update task using provider
@@ -299,7 +416,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             content: Text('Task updated successfully!'),
                           ),
                         );
-                        
+
                         // Navigate back
                         Navigator.pop(context);
                       }
@@ -307,9 +424,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     child: const Text('Save Changes'),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Cancel button
                 SizedBox(
                   width: double.infinity,
