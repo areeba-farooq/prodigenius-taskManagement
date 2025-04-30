@@ -107,6 +107,11 @@ class NotificationService {
     return prefs.getBool('enable_deadline_alerts') ?? true;
   }
 
+// Check if scheduled time alerts are enabled
+  Future<bool> areScheduledAlertsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('enable_scheduled_alerts') ?? true;
+  }
   // Check if daily digest is enabled
   Future<bool> isDailyDigestEnabled() async {
     final prefs = await SharedPreferences.getInstance();
@@ -213,6 +218,130 @@ class NotificationService {
     );
   }
 
+ // Schedule notification for a task at its scheduled time slot
+  Future<void> scheduleTaskAtTime(Task task) async {
+    // Check if scheduled alerts are enabled
+    if (!(await areScheduledAlertsEnabled())) {
+      debugPrint("Scheduled alerts are disabled by user preference");
+      return;
+    }
+
+    if (task.isCompleted) {
+      debugPrint("Not scheduling time alert for completed task: ${task.title}");
+      return;
+    }
+
+    // Need both scheduledDay and scheduledTimeSlot
+    if (task.scheduledDay == null || task.scheduledTimeSlot == null) {
+      debugPrint("Cannot schedule time alert for unscheduled task: ${task.title}");
+      return;
+    }
+
+    final int notificationId = task.id.hashCode + 5000; // Different ID from other notifications
+
+    // Calculate the scheduled date and time
+    final now = DateTime.now();
+    final scheduledDate = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).add(Duration(days: task.scheduledDay!));
+
+    // Convert time slot to hours
+    int hour;
+    String timeSlotName;
+    switch (task.scheduledTimeSlot!) {
+      case 0: // Morning
+        hour = 9; // 9:00 AM
+        timeSlotName = 'Morning';
+        break;
+      case 1: // Afternoon
+        hour = 13; // 1:00 PM
+        timeSlotName = 'Afternoon';
+        break;
+      case 2: // Evening
+        hour = 18; // 6:00 PM
+        timeSlotName = 'Evening';
+        break;
+      default:
+        hour = 9;
+        timeSlotName = 'Morning';
+    }
+
+    // Create the DateTime for the scheduled time
+    final scheduledDateTime = DateTime(
+      scheduledDate.year,
+      scheduledDate.month,
+      scheduledDate.day,
+      hour,
+      0, // 0 minutes
+    );
+
+    // Convert to TZDateTime
+    final tz.TZDateTime tzScheduledDateTime = tz.TZDateTime.from(
+      scheduledDateTime,
+      tz.local,
+    );
+
+    // Don't schedule if the time is in the past
+    if (tzScheduledDateTime.isBefore(tz.TZDateTime.now(tz.local))) {
+      debugPrint("Not scheduling time alert for past time: ${task.title}");
+      return;
+    }
+
+    // Notification details for Android
+    final AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'task_schedule_channel',
+          'Task Schedule',
+          channelDescription: 'Notifications for scheduled tasks',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+          color: Color(0xFF4CAF50), // Green
+        );
+
+    // Notification details for iOS
+    final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+    );
+
+    // Combined notification details
+    final NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iOSDetails,
+    );
+
+    // Generate notification title and body
+    String title = '📅 Scheduled Task';
+    String body = 'Time to work on "${task.title}" (${task.category})';
+
+    // Schedule the notification
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      notificationId,
+      title,
+      body,
+      tzScheduledDateTime,
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: task.id,
+    );
+
+    // Add to notification provider
+    await _addToNotificationProvider(
+      title,
+      body,
+      NotificationType.scheduled,
+      task.id,
+    );
+
+    debugPrint(
+      "Scheduled time alert for task: ${task.title} at $timeSlotName (${tzScheduledDateTime.toString()})",
+    );
+  }
   // In notification_service.dart
   Future<void> showTestNotification() async {
     const AndroidNotificationDetails androidDetails =

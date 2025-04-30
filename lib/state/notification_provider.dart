@@ -23,6 +23,15 @@ class NotificationProvider extends ChangeNotifier {
     // Check if there are notifications newer than the last viewed timestamp
     return _notifications.any((n) => n.timestamp.isAfter(_lastViewedTimestamp));
   }
+// Get count of notifications by type
+  int countNotificationsByType(NotificationType type) {
+    return _notifications.where((n) => n.type == type).length;
+  }
+
+  // Get unread count by type
+  int getUnreadCountByType(NotificationType type) {
+    return _notifications.where((n) => n.type == type && !n.isRead).length;
+  }
 
   NotificationProvider() {
     _init();
@@ -76,19 +85,7 @@ class NotificationProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  // Modification to the _init method in NotificationProvider class
-  // Future<void> _init() async {
-  //   if (!_isInitialized) {
-  //     debugPrint("Initializing NotificationProvider...");
-  //     await _loadNotifications();
-  //     _isInitialized = true;
-  //     debugPrint(
-  //       "NotificationProvider initialized with ${_notifications.length} notifications",
-  //     );
-  //     debugPrint("Unread count: $_unreadCount");
-  //     notifyListeners();
-  //   }
-  // }
+
 
   Future<void> _loadNotifications() async {
     try {

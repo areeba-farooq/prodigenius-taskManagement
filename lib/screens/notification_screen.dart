@@ -125,6 +125,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         notificationIcon = Icons.article;
         iconColor = Colors.blue;
         break;
+      case NotificationType.scheduled:
+        notificationIcon = Icons.schedule;
+        iconColor = Colors.green;
+        break;
     }
 
     return Dismissible(

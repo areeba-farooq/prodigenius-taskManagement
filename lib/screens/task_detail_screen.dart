@@ -1,3 +1,5 @@
+
+//*******************************8 */
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
@@ -22,8 +24,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late String _predictedPriority;
   late bool _isCompleted;
   late Duration _estimatedDuration;
-  late int _complexityLevel;
-
+ // Scheduling fields
+  late int? _scheduledDay;
+  late int? _scheduledTimeSlot;
+  late String? _scheduledTimeDescription;
+  Map<String, dynamic>? _scheduleSuggestion;
   @override
   void initState() {
     super.initState();
@@ -35,10 +40,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     _predictedPriority = widget.task.priority;
     _isCompleted = widget.task.isCompleted;
     _estimatedDuration = widget.task.estimatedDuration;
-    _complexityLevel = widget.task.complexityLevel;
+    _scheduledDay = widget.task.scheduledDay;
+    _scheduledTimeSlot = widget.task.scheduledTimeSlot;
+    _scheduledTimeDescription = widget.task.scheduledTimeDescription;
 
-    // Initialize ML model
-    // _initML();
+    // Initialize ML models
     _initModels();
   }
 
@@ -46,6 +52,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     try {
       await PriorityPredictor.initModel();
       await DurationEstimator.initModel();
+            await TaskScheduler.initModels();
+
       _updatePredictions();
     } catch (e) {
       print("Error initializing ML models: $e");
@@ -63,29 +71,31 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       // Update duration estimation
       _estimatedDuration = DurationEstimator.estimateTaskDuration(
         _selectedCategory,
-        _complexityLevel,
+        _urgencyLevel,
+        _selectedDate,
       );
+         // Update schedule suggestion
+      _updateScheduleSuggestion();
     });
   }
 
-  // Future<void> _initML() async {
-  //   try {
-  //     await PriorityPredictor.initModel();
-  //     _updatePredictedPriority();
-  //   } catch (e) {
-  //     print("Error initializing ML: $e");
-  //   }
-  // }
-
-  // void _updatePredictedPriority() {
-  //   setState(() {
-  //     _predictedPriority = PriorityPredictor.predictPriority(
-  //       _selectedDate,
-  //       _urgencyLevel,
-  //     );
-  //   });
-  // }
-
+void _updateScheduleSuggestion() {
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    final userPreferences = taskProvider.userPreferences;
+    
+    // Get user preferences for scheduling
+    final availableHours = userPreferences['availableHours'] as int;
+    final timePreference = userPreferences['timePreference'] as int;
+    
+    // Get schedule suggestion
+    _scheduleSuggestion = TaskScheduler.suggestSchedule(
+      priority: _predictedPriority,
+      duration: _estimatedDuration,
+      userAvailabilityHours: availableHours,
+      timePreference: timePreference,
+      dueDate: _selectedDate,
+    );
+  }
   @override
   void dispose() {
     _titleController.dispose();
@@ -102,8 +112,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
-        // Update priority prediction when date changes
-        // _updatePredictedPriority();
+        // Update predictions when date changes
         _updatePredictions();
       });
     }
@@ -264,8 +273,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       onChanged: (double value) {
                         setState(() {
                           _urgencyLevel = value.round();
-                          // Update priority prediction when urgency changes
-                          // _updatePredictedPriority();
+                          // Update both priority and duration predictions
                           _updatePredictions();
                         });
                       },
@@ -278,36 +286,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 ),
 
                 const SizedBox(height: 16),
-                // Complexity level slider
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Complexity Level:',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    Slider(
-                      value: _complexityLevel.toDouble(),
-                      min: 1,
-                      max: 5,
-                      divisions: 4,
-                      label: _complexityLevel.toString(),
-                      onChanged: (double value) {
-                        setState(() {
-                          _complexityLevel = value.round();
-                          // Update duration estimation when complexity changes
-                          _updatePredictions();
-                        });
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [Text('Simple'), Text('Complex')],
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 16),
                 // AI-suggested priority card
                 Card(
                   elevation: 3,
@@ -344,6 +323,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
 
                 // Estimated duration card
@@ -385,6 +365,140 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   ),
                 ),
 
+
+  // Current Schedule Card
+                if (_scheduledTimeDescription != null)
+                  Card(
+                    elevation: 3,
+                    color: Colors.green.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.schedule,
+                                color: Colors.green.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Current Schedule:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _scheduledTimeDescription!,
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.green.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                
+                const SizedBox(height: 16),
+                
+                // AI Suggested Schedule Card (only show if different from current)
+                if (_scheduleSuggestion != null && 
+                    (_scheduledDay != _scheduleSuggestion!['day'] || 
+                     _scheduledTimeSlot != _scheduleSuggestion!['timeSlot']))
+                  Card(
+                    elevation: 3,
+                    color: Colors.blue.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.auto_awesome,
+                                color: Colors.blue.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'New AI Schedule Suggestion:',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            TaskScheduler.getScheduleDescription(
+                              _scheduleSuggestion!['day'],
+                              _scheduleSuggestion!['timeSlotName'],
+                            ),
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _scheduledDay = _scheduleSuggestion!['day'];
+                                _scheduledTimeSlot = _scheduleSuggestion!['timeSlot'];
+                                _scheduledTimeDescription = TaskScheduler.getScheduleDescription(
+                                  _scheduleSuggestion!['day'],
+                                  _scheduleSuggestion!['timeSlotName'],
+                                );
+                              });
+                            },
+                            icon: const Icon(Icons.update),
+                            label: const Text('Apply New Schedule'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                
+                const SizedBox(height: 16),
+                
+                // Reschedule now button
+                if (!_isCompleted)
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      _updateScheduleSuggestion();
+                      setState(() {
+                        _scheduledDay = _scheduleSuggestion!['day'];
+                        _scheduledTimeSlot = _scheduleSuggestion!['timeSlot'];
+                        _scheduledTimeDescription = TaskScheduler.getScheduleDescription(
+                          _scheduleSuggestion!['day'],
+                          _scheduleSuggestion!['timeSlotName'],
+                        );
+                      });
+                      
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Task rescheduled!'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.schedule),
+                    label: const Text('Reschedule Now'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                  ),
+
                 const SizedBox(height: 24),
 
                 // Save button
@@ -403,8 +517,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           urgencyLevel: _urgencyLevel,
                           priority: _predictedPriority,
                           isCompleted: _isCompleted,
-                          complexityLevel: _complexityLevel,
                           estimatedDuration: _estimatedDuration,
+                          scheduledDay: _scheduledDay,
+                          scheduledTimeSlot: _scheduledTimeSlot,
+                          scheduledTimeDescription: _scheduledTimeDescription,
                         );
 
                         // Update task using provider

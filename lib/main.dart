@@ -45,8 +45,8 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
       _pageController.jumpToPage(index);
     });
   }
-static bool _providerConnected = false;
 
+  static bool _providerConnected = false;
 
   @override
   Widget build(BuildContext context) {
@@ -73,25 +73,25 @@ static bool _providerConnected = false;
             initialRoute: '/',
             // Key change: Connect providers after the app is built
             builder: (context, child) {
-  // Use a static flag to ensure this only runs once
-  if (!_providerConnected) {
-    _providerConnected = true;
-    
-    // Schedule this for after the frame is rendered
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint("Setting notification provider (one-time setup)...");
-      final notificationProvider = Provider.of<NotificationProvider>(
-        context,
-        listen: false,
-      );
-      NotificationService.instance.setNotificationProvider(
-        notificationProvider,
-      );
-    });
-  }
-  return child!;
-},
-         );
+              // Use a static flag to ensure this only runs once
+              if (!_providerConnected) {
+                _providerConnected = true;
+
+                // Schedule this for after the frame is rendered
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  debugPrint(
+                    "Setting notification provider (one-time setup)...",
+                  );
+                  final notificationProvider =
+                      Provider.of<NotificationProvider>(context, listen: false);
+                  NotificationService.instance.setNotificationProvider(
+                    notificationProvider,
+                  );
+                });
+              }
+              return child!;
+            },
+          );
         },
       ),
     );
@@ -159,7 +159,7 @@ class _MainAppScaffoldState extends State<MainAppScaffold> {
       const HomeScreen(),
       const TaskInputScreen(),
       const AccountScreen(),
-      const DashboardScreen(), // Replace Placeholder with actual Dashboard
+      const DashboardScreen(),
     ];
 
     return Scaffold(
@@ -198,13 +198,7 @@ class _MainAppScaffoldState extends State<MainAppScaffold> {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Initialize Hive
-  await Hive.initFlutter();
-
-  // Register Hive adapters
-  Hive.registerAdapter(TaskAdapter());
 
   await initializeFirebase();
-
   runApp(const TaskManagerApp());
 }

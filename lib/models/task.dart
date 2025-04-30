@@ -1,37 +1,17 @@
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
-part 'task.g.dart';//flutter pub run build_runner build
-
-
-@HiveType(typeId: 0)
-class Task extends HiveObject {
-  @HiveField(0)
+class Task {
   final String id;
-
-  @HiveField(1)
   final String title;
-
-  @HiveField(2)
   final String category;
-
-  @HiveField(3)
   final DateTime dueDate;
-
-  @HiveField(4)
-  final int urgencyLevel; // 1-5 scale where 5 is most urgent
-
-  @HiveField(5)
-  final String priority; // High, Medium, Low
-
-  @HiveField(6)
-  bool isCompleted;
-  
-  @HiveField(7)
-  final int complexityLevel; // 1-5 scale where 5 is most complex
-  
-  @HiveField(8)
-  final Duration estimatedDuration; // Estimated time to complete the task
+  final int urgencyLevel;
+  final String priority;
+  final bool isCompleted;
+  final Duration estimatedDuration;
+  final int? scheduledDay;
+  final int? scheduledTimeSlot;
+  final String? scheduledTimeDescription;
 
   Task({
     String? id,
@@ -41,11 +21,47 @@ class Task extends HiveObject {
     required this.urgencyLevel,
     required this.priority,
     this.isCompleted = false,
-    this.complexityLevel = 3, // Default to medium complexity
-    this.estimatedDuration = const Duration(minutes: 30), // Default to 30 minutes
-  }) : id = id ?? const Uuid().v4(); // Auto-generate ID if not provided
+    required this.estimatedDuration,
+    this.scheduledDay,
+    this.scheduledTimeSlot,
+    this.scheduledTimeDescription,
+  }) : id = id ?? const Uuid().v4();
 
-  // Create a copy of this task with updated fields
+  // Convert Task to a map
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'category': category,
+      'dueDate': dueDate.millisecondsSinceEpoch,
+      'urgencyLevel': urgencyLevel,
+      'priority': priority,
+      'isCompleted': isCompleted,
+      'estimatedDurationMinutes': estimatedDuration.inMinutes,
+      'scheduledDay': scheduledDay,
+      'scheduledTimeSlot': scheduledTimeSlot,
+      'scheduledTimeDescription': scheduledTimeDescription,
+    };
+  }
+
+  // Create Task from a map
+  factory Task.fromMap(Map<String, dynamic> map) {
+    return Task(
+      id: map['id'],
+      title: map['title'],
+      category: map['category'],
+      dueDate: DateTime.fromMillisecondsSinceEpoch(map['dueDate']),
+      urgencyLevel: map['urgencyLevel'],
+      priority: map['priority'],
+      isCompleted: map['isCompleted'],
+      estimatedDuration: Duration(minutes: map['estimatedDurationMinutes']),
+      scheduledDay: map['scheduledDay'],
+      scheduledTimeSlot: map['scheduledTimeSlot'],
+      scheduledTimeDescription: map['scheduledTimeDescription'],
+    );
+  }
+
+  // Create a copy of a Task with some modified fields
   Task copyWith({
     String? title,
     String? category,
@@ -53,54 +69,24 @@ class Task extends HiveObject {
     int? urgencyLevel,
     String? priority,
     bool? isCompleted,
-    int? complexityLevel,
     Duration? estimatedDuration,
+    int? scheduledDay,
+    int? scheduledTimeSlot,
+    String? scheduledTimeDescription,
   }) {
     return Task(
-      id: id, // Keep the same ID
+      id: id,
       title: title ?? this.title,
       category: category ?? this.category,
       dueDate: dueDate ?? this.dueDate,
       urgencyLevel: urgencyLevel ?? this.urgencyLevel,
       priority: priority ?? this.priority,
       isCompleted: isCompleted ?? this.isCompleted,
-      complexityLevel: complexityLevel ?? this.complexityLevel,
       estimatedDuration: estimatedDuration ?? this.estimatedDuration,
+      scheduledDay: scheduledDay ?? this.scheduledDay,
+      scheduledTimeSlot: scheduledTimeSlot ?? this.scheduledTimeSlot,
+      scheduledTimeDescription:
+          scheduledTimeDescription ?? this.scheduledTimeDescription,
     );
-  }
-
-  // Factory constructor to create Task from Map (useful for JSON)
-  factory Task.fromMap(Map<String, dynamic> map) {
-    return Task(
-      id: map['id'],
-      title: map['title'],
-      category: map['category'],
-      dueDate:
-          map['dueDate'] is DateTime
-              ? map['dueDate']
-              : DateTime.parse(map['dueDate']),
-      urgencyLevel: map['urgencyLevel'],
-      priority: map['priority'],
-      isCompleted: map['isCompleted'] ?? false,
-      complexityLevel: map['complexityLevel'] ?? 3,
-      estimatedDuration: map['estimatedDuration'] != null 
-          ? Duration(minutes: map['estimatedDuration']) 
-          : const Duration(minutes: 30),
-    );
-  }
-
-  // Convert Task to Map (useful for JSON)
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'title': title,
-      'category': category,
-      'dueDate': dueDate.toIso8601String(),
-      'urgencyLevel': urgencyLevel,
-      'priority': priority,
-      'isCompleted': isCompleted,
-      'complexityLevel': complexityLevel,
-      'estimatedDuration': estimatedDuration.inMinutes,
-    };
   }
 }

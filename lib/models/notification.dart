@@ -1,5 +1,14 @@
 // lib/models/app_notification.dart
 
+
+
+// Notification types
+enum NotificationType {
+  task, // Task due reminder
+  deadline, // Task deadline
+  digest, // Daily task digest
+  scheduled, // AI-scheduled task time
+}
 class AppNotification {
   final String id;
   final String title;
@@ -44,13 +53,8 @@ class AppNotification {
       'timestamp': timestamp.toIso8601String(),
       'taskId': taskId,
       'isRead': isRead,
-      'type': type.toString(),
+      'type': type.toString().split('.').last,
     };
   }
 }
 
-enum NotificationType {
-  task, // Regular task notification
-  deadline, // Task deadline notification
-  digest, // Daily digest notification
-}

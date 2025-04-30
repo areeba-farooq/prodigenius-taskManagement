@@ -5,25 +5,30 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 import os
 
-# Synthetic training data for task duration estimation
+# Updated synthetic training data for task duration estimation
 # Features:
 # - category: encoded as numeric (0=Work, 1=Personal, 2=Study, 3=Health, 4=Shopping, 5=Travel)
-# - task_complexity: 1-5 scale
+# - urgency_level: 1-5 scale
+# - days_until_due: number of days until the task is due
 # - duration_minutes: the target variable (estimated minutes to complete)
 
 def generate_synthetic_data(n_samples=5000):
     # Random category (0-5)
     category = np.random.randint(0, 6, n_samples)
     
-    # Random complexity levels (1-5)
-    task_complexity = np.random.randint(1, 6, n_samples)
+    # Random urgency levels (1-5)
+    urgency_level = np.random.randint(1, 6, n_samples)
+    
+    # Random days until due (0-30 days)
+    days_until_due = np.random.randint(0, 31, n_samples)
     
     # Duration in minutes based on rules
     duration_minutes = np.zeros(n_samples, dtype=np.int32)
     
     for i in range(n_samples):
         cat = category[i]
-        complexity = task_complexity[i]
+        urgency = urgency_level[i]
+        days_due = days_until_due[i]
         
         # Base duration depending on category (in minutes)
         if cat == 0:  # Work
@@ -39,12 +44,20 @@ def generate_synthetic_data(n_samples=5000):
         else:  # Travel
             base_duration = 90  # 1.5 hours base for travel tasks
         
-        # Adjust by complexity (1-5 scale)
-        # Each complexity level adds a percentage of the base duration
-        complexity_factor = 0.7 + (complexity * 0.15)  # 1=85%, 2=100%, 3=115%, 4=130%, 5=145%
+        # Adjust by urgency (1-5 scale)
+        # Higher urgency typically means task needs to be done faster
+        urgency_factor = 0.8 + (urgency * 0.1)  # 1=90%, 3=110%, 5=130%
+        
+        # Due date adjustment factor
+        # Tasks due sooner might need to be done more quickly
+        due_date_factor = 1.0
+        if days_due <= 1:
+            due_date_factor = 0.8  # 20% less time when due today/tomorrow
+        elif days_due <= 3:
+            due_date_factor = 0.9  # 10% less time when due within 3 days
         
         # Calculate duration
-        calculated_duration = int(base_duration * complexity_factor)
+        calculated_duration = int(base_duration * urgency_factor * due_date_factor)
         
         # Add some random variation (±20%)
         variation = np.random.uniform(0.8, 1.2)
@@ -54,13 +67,13 @@ def generate_synthetic_data(n_samples=5000):
     outlier_indices = np.random.choice(n_samples, int(n_samples * 0.05), replace=False)
     duration_minutes[outlier_indices] = np.random.randint(15, 300, len(outlier_indices))
     
-    return category, task_complexity, duration_minutes
+    return category, urgency_level, days_until_due, duration_minutes
 
 # Generate data
-categories, complexity, durations = generate_synthetic_data(5000)
+categories, urgency_levels, days_until_due, durations = generate_synthetic_data(5000)
 
 # Combine features into a single array
-X = np.column_stack((categories, complexity))
+X = np.column_stack((categories, urgency_levels, days_until_due))
 y = durations
 
 # Split data
@@ -68,7 +81,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 # Create and train the model
 model = keras.Sequential([
-    keras.layers.Input(shape=(2,)),  # 2 inputs: category, complexity
+    keras.layers.Input(shape=(3,)),  # 3 inputs: category, urgency_level, days_until_due
     keras.layers.Dense(32, activation='relu'),
     keras.layers.Dense(16, activation='relu'),
     keras.layers.Dense(1)  # Output is a continuous value (minutes)
@@ -113,10 +126,10 @@ output_details = interpreter.get_output_details()
 
 # Test with examples
 test_examples = [
-    [0, 3],   # Work task, medium complexity
-    [1, 2],   # Personal task, low-medium complexity
-    [2, 5],   # Study task, high complexity
-    [5, 4],   # Travel task, high complexity
+    [0, 3, 5],    # Work task, medium urgency, due in 5 days
+    [1, 2, 1],    # Personal task, low-medium urgency, due tomorrow
+    [2, 5, 0],    # Study task, high urgency, due today
+    [5, 4, 10],   # Travel task, high urgency, due in 10 days
 ]
 
 print("\nTesting TFLite model with examples:")
@@ -138,5 +151,5 @@ for i, example in enumerate(test_examples):
     hours = estimated_minutes // 60
     minutes = estimated_minutes % 60
     
-    print(f"Example {i+1}: Category = {category_name}, Complexity = {example[1]}")
+    print(f"Example {i+1}: Category = {category_name}, Urgency = {example[1]}, Days until due = {example[2]}")
     print(f"   Estimated duration: {estimated_minutes} minutes ({hours}h {minutes}m)")
