@@ -19,7 +19,7 @@ class TaskCard extends StatelessWidget {
           trailing: Checkbox(
             value: task.isCompleted,
             onChanged: (bool? value) {
-              // Update task completion status
+              
             },
           ),
         ),

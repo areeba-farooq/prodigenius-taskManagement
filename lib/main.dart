@@ -14,7 +14,7 @@ import 'package:taskgenius/state/theme_provider.dart';
 import 'package:taskgenius/utils/theme_config.dart';
 import 'package:taskgenius/services/notification_service.dart';
 
-// Initialize Firebase
+
 Future<void> initializeFirebase() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await NotificationService.instance.initialize();
@@ -28,20 +28,12 @@ class TaskManagerApp extends StatefulWidget {
 }
 
 class _TaskManagerAppState extends State<TaskManagerApp> {
-  int _currentIndex = 0;
   final PageController _pageController = PageController();
 
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-      _pageController.jumpToPage(index);
-    });
   }
 
   static bool _providerConnected = false;
@@ -69,9 +61,9 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
               '/home': (context) => const MainAppScaffold(),
             },
             initialRoute: '/',
-            // Key change: Connect providers after the app is built
+            
             builder: (context, child) {
-              // Use a static flag to ensure this only runs once
+              
               if (!_providerConnected) {
                 _providerConnected = true;
 
@@ -85,7 +77,10 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
                   NotificationService.instance.setNotificationProvider(
                     notificationProvider,
                   );
-                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  final authProvider = Provider.of<AuthProvider>(
+                    context,
+                    listen: false,
+                  );
                   authProvider.setContext(context);
                 });
               }
@@ -107,7 +102,7 @@ class AppRouter extends StatefulWidget {
 }
 
 class _AppRouterState extends State<AppRouter> {
-    bool _userInitialized = false;
+  bool _userInitialized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +110,7 @@ class _AppRouterState extends State<AppRouter> {
       builder: (context, authProvider, child) {
         print('Auth state changed. isLoggedIn: ${authProvider.isLoggedIn}');
 
-        // If loading, show a loading screen
+        
         if (authProvider.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -124,19 +119,24 @@ class _AppRouterState extends State<AppRouter> {
 
         // If user is not logged in, show authentication flow
         if (!authProvider.isLoggedIn) {
-                    _userInitialized = false; // Reset initialization flag
+          _userInitialized = false; 
           return const SplashScreen();
         }
-    // If user is logged in, initialize task provider with user ID
+        // If user is logged in, initialize task provider with user ID
         if (authProvider.isLoggedIn && !_userInitialized) {
           // Initialize TaskProvider for this user
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (authProvider.currentUser != null) {
-              final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+              final taskProvider = Provider.of<TaskProvider>(
+                context,
+                listen: false,
+              );
               await taskProvider.setUser(authProvider.currentUser!.id);
-              setState(() {
-                _userInitialized = true;
-              });
+              if (mounted) {
+                setState(() {
+                  _userInitialized = true;
+                });
+              }
             }
           });
         }
@@ -174,7 +174,7 @@ class _MainAppScaffoldState extends State<MainAppScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    // Main app screens
+    
     final List<Widget> screens = [
       const HomeScreen(),
       const TaskInputScreen(),

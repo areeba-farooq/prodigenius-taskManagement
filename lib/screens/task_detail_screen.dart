@@ -1,5 +1,5 @@
 
-//*******************************8 */
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
@@ -24,7 +24,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late String _predictedPriority;
   late bool _isCompleted;
   late Duration _estimatedDuration;
- // Scheduling fields
+ 
   late int? _scheduledDay;
   late int? _scheduledTimeSlot;
   late String? _scheduledTimeDescription;
@@ -147,10 +147,10 @@ void _updateScheduleSuggestion() {
                           onPressed: () {
                             // Delete task and navigate back
                             taskProvider.deleteTask(widget.task.id);
-                            Navigator.pop(context); // Close dialog
+                            Navigator.pop(context); 
                             Navigator.pop(
                               context,
-                            ); // Go back to previous screen
+                            ); 
                           },
                           child: const Text(
                             'Delete',
@@ -408,7 +408,7 @@ void _updateScheduleSuggestion() {
                 
                 const SizedBox(height: 16),
                 
-                // AI Suggested Schedule Card (only show if different from current)
+                // AI Suggested Schedule Card 
                 if (_scheduleSuggestion != null && 
                     (_scheduledDay != _scheduleSuggestion!['day'] || 
                      _scheduledTimeSlot != _scheduleSuggestion!['timeSlot']))
@@ -533,7 +533,7 @@ void _updateScheduleSuggestion() {
                           ),
                         );
 
-                        // Navigate back
+                        
                         Navigator.pop(context);
                       }
                     },

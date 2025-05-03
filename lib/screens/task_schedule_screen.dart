@@ -15,7 +15,7 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _selectedDayIndex = 0; // 0 = Today, 1 = Tomorrow, etc.
+  int _selectedDayIndex = 0;
 
   // Time slot filters
   bool _showMorning = true;
@@ -25,7 +25,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 8, vsync: this); // 7 days + All
+    _tabController = TabController(length: 8, vsync: this);
 
     _tabController.addListener(() {
       setState(() {
@@ -40,7 +40,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     super.dispose();
   }
 
-  // Helper method to get day name
+  // Method to get day name
   String _getDayName(int dayIndex) {
     if (dayIndex == 0) return 'Today';
     if (dayIndex == 1) return 'Tomorrow';
@@ -50,7 +50,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     return _getDayOfWeek(targetDate.weekday);
   }
 
-  // Helper method to get day of week name
+  // Method to get day of week name
   String _getDayOfWeek(int weekday) {
     switch (weekday) {
       case 1:
@@ -175,15 +175,19 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               await taskProvider.rescheduleAllTasks();
 
               // Hide loading indicator
-              Navigator.pop(context);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
 
               // Show success message
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('All tasks have been rescheduled!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('All tasks have been rescheduled!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
           ),
           PopupMenuButton<String>(

@@ -42,7 +42,7 @@ class _SignupScreenState extends State<SignupScreen> {
     if (value == null || value.isEmpty) {
       return 'Please enter your email';
     }
-    // Simple email validation regex
+    //Email validation regex
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(value)) {
       return 'Please enter a valid email address';
@@ -72,16 +72,13 @@ class _SignupScreenState extends State<SignupScreen> {
     return null;
   }
 
-
   // Register function
   Future<void> _register() async {
     // First validate the form
-    if (_formKey.currentState!.validate()) {      
-
+    if (_formKey.currentState!.validate()) {
       // Hide keyboard
       FocusScope.of(context).unfocus();
 
-      // Get auth provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       // Clear any previous errors when starting a new registration attempt
@@ -96,7 +93,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
       // If registration successful and widget is still mounted
       if (success && mounted) {
-
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -108,11 +104,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
         // Wait a moment for the snackbar to be visible
         await Future.delayed(const Duration(milliseconds: 1500));
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const LoginScreen()),
-        );
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        }
       }
     }
   }
@@ -128,10 +125,13 @@ class _SignupScreenState extends State<SignupScreen> {
             height: double.infinity,
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor,
-              image: const DecorationImage(
-                image: AssetImage('assets/bg.jpeg'),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Theme.of(context).primaryColor,
+                  Theme.of(context).colorScheme.secondary,
+                ],
               ),
             ),
           ),
@@ -151,15 +151,18 @@ class _SignupScreenState extends State<SignupScreen> {
             maxChildSize: 0.95,
             builder: (context, scrollController) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(24),
                     topRight: Radius.circular(24),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black12,
+                      color:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? Colors.black.withOpacity(0.5)
+                              : Colors.black12,
                       blurRadius: 10,
                       spreadRadius: 5,
                     ),
@@ -223,7 +226,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                           ),
                                         ),
                                       ),
-                                      // Add a close button to manually dismiss errors
+                                      
                                       IconButton(
                                         icon: Icon(
                                           Icons.close,
@@ -252,6 +255,17 @@ class _SignupScreenState extends State<SignupScreen> {
                                   prefixIcon: const Icon(Icons.person),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -268,6 +282,17 @@ class _SignupScreenState extends State<SignupScreen> {
                                   prefixIcon: const Icon(Icons.email),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -297,6 +322,17 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -326,6 +362,17 @@ class _SignupScreenState extends State<SignupScreen> {
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -348,13 +395,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                       text: TextSpan(
                                         text: 'I agree to the ',
                                         style: TextStyle(
-                                          color: Colors.grey[700],
+                                     
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  
                                         ),
-                                        children: const [
+                                        children:  [
                                           TextSpan(
                                             text: 'Terms of Service',
                                             style: TextStyle(
-                                              color: Colors.blue,
+                                              color: Theme.of(context).colorScheme.primary,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -362,7 +411,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                           TextSpan(
                                             text: 'Privacy Policy',
                                             style: TextStyle(
-                                              color: Colors.blue,
+                                              color: Theme.of(context).colorScheme.primary,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -422,7 +471,11 @@ class _SignupScreenState extends State<SignupScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text('Already have an account?'),
+                                   Text('Already have an account?'
+                                  , style: TextStyle(
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                  ),
                                   TextButton(
                                     onPressed: () {
                                       Navigator.pushReplacement(
@@ -433,10 +486,12 @@ class _SignupScreenState extends State<SignupScreen> {
                                         ),
                                       );
                                     },
-                                    child: const Text(
+                                    child:  Text(
                                       'Login',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        
+                                        color: Theme.of(context).colorScheme.primary,
                                       ),
                                     ),
                                   ),

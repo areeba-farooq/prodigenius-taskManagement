@@ -3,12 +3,10 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:taskgenius/models/notification.dart';
 import 'dart:io';
 import 'package:taskgenius/screens/splash_screen.dart';
 import 'package:taskgenius/services/notification_service.dart';
 import 'package:taskgenius/state/auth_provider.dart';
-import 'package:taskgenius/state/notification_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 import 'package:taskgenius/utils/theme_switch.dart';
 
@@ -49,7 +47,6 @@ class _AccountScreenState extends State<AccountScreen> {
     });
   }
 
-  // Call this in initState
   @override
   void initState() {
     super.initState();
@@ -159,113 +156,173 @@ class _AccountScreenState extends State<AccountScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // User profile card
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            // User avatar with update option
-                            GestureDetector(
-                              onTap:
-                                  () => _showProfilePictureOptions(
-                                    context,
-                                    authProvider,
-                                  ),
-                              child: Stack(
-                                alignment: Alignment.bottomRight,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 50,
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).primaryColor.withOpacity(0.2),
-                                    backgroundImage:
-                                        user.photoUrl != null
-                                            ? NetworkImage(user.photoUrl!)
-                                            : null,
-                                    child:
-                                        user.photoUrl == null
-                                            ? Text(
-                                              user.name
-                                                  .substring(0, 1)
-                                                  .toUpperCase(),
-                                              style: const TextStyle(
-                                                fontSize: 36,
-                                                color: Colors.black54,
-                                                fontWeight: FontWeight.bold,
+                    Center(
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          maxWidth: 600,
+                        ), 
+                        child: Card(
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24.0),
+                            child: Column(
+                              children: [
+                                // User avatar with update option
+                                GestureDetector(
+                                  onTap:
+                                      () => _showProfilePictureOptions(
+                                        context,
+                                        authProvider,
+                                      ),
+                                  child: Stack(
+                                    alignment: Alignment.bottomRight,
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Theme.of(
+                                                context,
+                                              ).primaryColor.withOpacity(0.2),
+                                              blurRadius: 10,
+                                              spreadRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                        child: CircleAvatar(
+                                          radius: 60,
+                                          backgroundColor: Theme.of(
+                                            context,
+                                          ).primaryColor.withOpacity(0.1),
+                                          backgroundImage:
+                                              user.photoUrl != null
+                                                  ? NetworkImage(user.photoUrl!)
+                                                  : null,
+                                          child:
+                                              user.photoUrl == null
+                                                  ? Text(
+                                                    user.name
+                                                        .substring(0, 1)
+                                                        .toUpperCase(),
+                                                    style: TextStyle(
+                                                      fontSize: 42,
+                                                      color:
+                                                          Theme.of(
+                                                            context,
+                                                          ).primaryColor,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  )
+                                                  : null,
+                                        ),
+                                      ),
+                                      if (_isUploading)
+                                        const Positioned.fill(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 3,
+                                          ),
+                                        )
+                                      else
+                                        Positioned(
+                                          bottom: 0,
+                                          right: 0,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).primaryColor,
+                                              shape: BoxShape.circle,
+                                              border: Border.all(
+                                                color:
+                                                    Theme.of(context).cardColor,
+                                                width: 3,
                                               ),
-                                            )
-                                            : null,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.2),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: const Icon(
+                                              Icons.camera_alt,
+                                              color: Colors.white,
+                                              size: 22,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                  if (_isUploading)
-                                    CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        Theme.of(context).primaryColor,
+                                ),
+                                const SizedBox(height: 24),
+
+                                // User info
+                                Text(
+                                  user.name,
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  user.email,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.color
+                                        ?.withOpacity(0.7),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Edit profile button
+                                SizedBox(
+                                  width: 200,
+                                  child: OutlinedButton.icon(
+                                    onPressed:
+                                        () => _showEditProfileDialog(
+                                          context,
+                                          authProvider,
+                                          user,
+                                        ),
+                                    icon: const Icon(Icons.edit, size: 18),
+                                    label: const Text('Edit Profile'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 14,
                                       ),
-                                    )
-                                  else
-                                    Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
+                                      side: BorderSide(
                                         color: Theme.of(context).primaryColor,
-                                        shape: BoxShape.circle,
+                                        width: 2,
                                       ),
-                                      child: const Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.white,
-                                        size: 20,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // User info
-                            Text(
-                              user.name,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              user.email,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Edit profile button
-                            OutlinedButton.icon(
-                              onPressed:
-                                  () => _showEditProfileDialog(
-                                    context,
-                                    authProvider,
-                                    user,
                                   ),
-                              icon: const Icon(Icons.edit, size: 16),
-                              label: const Text('Edit Profile'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 12,
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 24),
 
                     // Task statistics section
@@ -619,7 +676,7 @@ class _AccountScreenState extends State<AccountScreen> {
 
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           title: const Text('Edit Profile'),
           content: Column(
@@ -632,37 +689,33 @@ class _AccountScreenState extends State<AccountScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Name',
-                  border: OutlineInputBorder(),
-                ),
-              ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () async {
                 if (_nameController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
                     const SnackBar(content: Text('Name cannot be empty')),
                   );
                   return;
                 }
 
-                Navigator.pop(context);
+                // Save the root context before closing dialogs
+                final rootContext = context;
 
-                // Show loading
+                Navigator.pop(dialogContext);
+
+                // Show loading dialog
                 showDialog(
-                  context: context,
+                  context: rootContext,
                   barrierDismissible: false,
                   builder:
-                      (context) =>
+                      (loadingContext) =>
                           const Center(child: CircularProgressIndicator()),
                 );
 
@@ -672,32 +725,42 @@ class _AccountScreenState extends State<AccountScreen> {
                     name: _nameController.text.trim(),
                   );
 
-                  // Close loading dialog
-                  if (context.mounted) Navigator.pop(context);
+                  if (rootContext.mounted) {
+                    Navigator.pop(rootContext);
 
-                  if (success && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Profile updated successfully'),
-                      ),
-                    );
-                  } else if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Failed to update profile: ${authProvider.error}',
-                        ),
-                      ),
-                    );
+                    // Show result message with proper context check
+                    if (rootContext.mounted) {
+                      if (success) {
+                        ScaffoldMessenger.of(rootContext).showSnackBar(
+                          const SnackBar(
+                            content: Text('Profile updated successfully'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(rootContext).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Failed to update profile: ${authProvider.error ?? 'Unknown error'}',
+                            ),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    }
                   }
                 } catch (e) {
-                  // Close loading dialog
-                  if (context.mounted) Navigator.pop(context);
+                  if (rootContext.mounted) {
+                    Navigator.pop(rootContext);
 
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to update profile: $e')),
-                    );
+                    if (rootContext.mounted) {
+                      ScaffoldMessenger.of(rootContext).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to update profile: $e'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   }
                 }
               },
@@ -714,7 +777,6 @@ class _AccountScreenState extends State<AccountScreen> {
     BuildContext context,
     AuthProvider authProvider,
   ) {
-    // Reset password controllers
     _currentPasswordController.clear();
     _newPasswordController.clear();
     _confirmPasswordController.clear();
@@ -816,7 +878,6 @@ class _AccountScreenState extends State<AccountScreen> {
                     _newPasswordController.text,
                   );
 
-                  // Close loading dialog
                   if (context.mounted) Navigator.pop(context);
 
                   if (success && context.mounted) {
@@ -835,7 +896,6 @@ class _AccountScreenState extends State<AccountScreen> {
                     );
                   }
                 } catch (e) {
-                  // Close loading dialog
                   if (context.mounted) Navigator.pop(context);
 
                   if (context.mounted) {
@@ -868,7 +928,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
               TextButton(
                 onPressed: () async {
-                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); 
                   await authProvider.logout();
 
                   // Navigate to splash screen
@@ -891,7 +951,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  // Helper method to build a statistic card
+  // Method to build a statistic card
   Widget _buildStatCard(
     BuildContext context,
     IconData icon,
@@ -923,7 +983,7 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  // Helper method to build a settings item
+  // Method to build a settings item
   Widget _buildSettingsItem(
     BuildContext context,
     IconData icon,

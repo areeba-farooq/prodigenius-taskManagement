@@ -2,19 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  // Theme key for shared preferences
+  
   static const String _themeKey = 'app_theme';
 
-  // Theme mode (light or dark)
+  
   ThemeMode _themeMode = ThemeMode.light;
 
-  // Getter for current theme mode
+  
   ThemeMode get themeMode => _themeMode;
 
-  // Check if dark mode is enabled
+  
   bool get isDarkMode => _themeMode == ThemeMode.dark;
 
-  // Constructor - load saved theme from shared preferences
+  
   ThemeProvider() {
     _loadThemeFromPrefs();
   }

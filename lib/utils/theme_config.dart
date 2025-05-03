@@ -1,207 +1,23 @@
 import 'package:flutter/material.dart';
 
-// class AppTheme {
-//   // Light theme
-//   static ThemeData lightTheme = ThemeData(
-//     useMaterial3: true,
-//     brightness: Brightness.light,
-//     primarySwatch: Colors.blue,
-//     colorScheme: ColorScheme.light(
-//       primary: Colors.blue,
-//       secondary: Colors.blueAccent,
-//       surface: Colors.white,
-//       background: Colors.grey.shade50,
-//       error: Colors.red.shade700,
-//     ),
-//     appBarTheme: AppBarTheme(
-//       backgroundColor: Colors.blue,
-//       foregroundColor: Colors.white,
-//       elevation: 0,
-//     ),
-//     cardTheme: CardTheme(
-//       color: Colors.white,
-//       elevation: 2,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(12),
-//       ),
-//     ),
-//     elevatedButtonTheme: ElevatedButtonThemeData(
-//       style: ElevatedButton.styleFrom(
-//         foregroundColor: Colors.white,
-//         backgroundColor: Colors.blue,
-//         elevation: 2,
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//       ),
-//     ),
-//     outlinedButtonTheme: OutlinedButtonThemeData(
-//       style: OutlinedButton.styleFrom(
-//         foregroundColor: Colors.blue,
-//         side: const BorderSide(color: Colors.blue),
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//       ),
-//     ),
-//     textButtonTheme: TextButtonThemeData(
-//       style: TextButton.styleFrom(
-//         foregroundColor: Colors.blue,
-//       ),
-//     ),
-//     inputDecorationTheme: InputDecorationTheme(
-//       border: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//       ),
-//       filled: true,
-//       fillColor: Colors.grey.shade100,
-//       contentPadding: const EdgeInsets.all(16),
-//     ),
-//     bottomNavigationBarTheme: BottomNavigationBarThemeData(
-//       backgroundColor: Colors.white,
-//       selectedItemColor: Colors.blue,
-//       unselectedItemColor: Colors.grey.shade600,
-//       type: BottomNavigationBarType.fixed,
-//       elevation: 8,
-//     ),
-//     dividerTheme: DividerThemeData(
-//       color: Colors.grey.shade300,
-//       thickness: 1,
-//     ),
-//     textTheme: const TextTheme(
-//       titleLarge: TextStyle(
-//         fontSize: 22,
-//         fontWeight: FontWeight.bold,
-//         color: Colors.black87,
-//       ),
-//       titleMedium: TextStyle(
-//         fontSize: 18,
-//         fontWeight: FontWeight.bold,
-//         color: Colors.black87,
-//       ),
-//       bodyLarge: TextStyle(
-//         fontSize: 16,
-//         color: Colors.black87,
-//       ),
-//       bodyMedium: TextStyle(
-//         fontSize: 14,
-//         color: Colors.black87,
-//       ),
-//     ),
-//   );
-
-//   // Dark theme
-//   static ThemeData darkTheme = ThemeData(
-//     useMaterial3: true,
-//     brightness: Brightness.dark,
-//     primarySwatch: Colors.blue,
-//     colorScheme: ColorScheme.dark(
-//       primary: Colors.blue,
-//       secondary: Colors.lightBlue,
-//       surface: const Color(0xFF1E1E1E),
-//       background: const Color(0xFF121212),
-//       error: Colors.red.shade300,
-//     ),
-//     scaffoldBackgroundColor: const Color(0xFF121212),
-//     appBarTheme: const AppBarTheme(
-//       backgroundColor: Color(0xFF1E1E1E),
-//       foregroundColor: Colors.white,
-//       elevation: 0,
-//     ),
-//     cardTheme: CardTheme(
-//       color: const Color(0xFF1E1E1E),
-//       elevation: 4,
-//       shape: RoundedRectangleBorder(
-//         borderRadius: BorderRadius.circular(12),
-//       ),
-//     ),
-//     elevatedButtonTheme: ElevatedButtonThemeData(
-//       style: ElevatedButton.styleFrom(
-//         foregroundColor: Colors.white,
-//         backgroundColor: Colors.blue,
-//         elevation: 2,
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//       ),
-//     ),
-//     outlinedButtonTheme: OutlinedButtonThemeData(
-//       style: OutlinedButton.styleFrom(
-//         foregroundColor: Colors.blue,
-//         side: const BorderSide(color: Colors.blue),
-//         shape: RoundedRectangleBorder(
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-//       ),
-//     ),
-//     textButtonTheme: TextButtonThemeData(
-//       style: TextButton.styleFrom(
-//         foregroundColor: Colors.blue,
-//       ),
-//     ),
-//     inputDecorationTheme: InputDecorationTheme(
-//       border: OutlineInputBorder(
-//         borderRadius: BorderRadius.circular(8),
-//       ),
-//       filled: true,
-//       fillColor: const Color(0xFF2C2C2C),
-//       contentPadding: const EdgeInsets.all(16),
-//     ),
-//     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-//       backgroundColor: Color(0xFF1E1E1E),
-//       selectedItemColor: Colors.blue,
-//       unselectedItemColor: Colors.grey,
-//       type: BottomNavigationBarType.fixed,
-//       elevation: 8,
-//     ),
-//     dividerTheme: const DividerThemeData(
-//       color: Color(0xFF3E3E3E),
-//       thickness: 1,
-//     ),
-//     textTheme: const TextTheme(
-//       titleLarge: TextStyle(
-//         fontSize: 22,
-//         fontWeight: FontWeight.bold,
-//         color: Colors.white,
-//       ),
-//       titleMedium: TextStyle(
-//         fontSize: 18,
-//         fontWeight: FontWeight.bold,
-//         color: Colors.white,
-//       ),
-//       bodyLarge: TextStyle(
-//         fontSize: 16,
-//         color: Colors.white,
-//       ),
-//       bodyMedium: TextStyle(
-//         fontSize: 14,
-//         color: Colors.white,
-//       ),
-//     ),
-//   );
-// }
-
-
 class AppTheme {
-  // Define core colors
-  static const Color primaryColor = Color(0xFF1565C0); // Deep Blue
-  static const Color secondaryColor = Color(0xFFFF8F00); // Amber
+  
+  static const Color primaryColor = Color(
+    0xFFA53860,
+  ); 
+  static const Color secondaryColor = Color(0xFFFF8F00); 
   static const Color successColor = Color(
     0xFF43A047,
-  ); // Green for completed tasks
+  ); 
   static const Color errorColor = Color(
     0xFFE53935,
-  ); // Red for errors/high priority
+  ); 
   static const Color warningColor = Color(
     0xFFFB8C00,
-  ); // Orange for medium priority
+  ); 
   static const Color infoColor = Color(
     0xFF29B6F6,
-  ); // Light Blue for low priority
+  ); 
 
   // Light theme
   static ThemeData lightTheme = ThemeData(
@@ -302,7 +118,7 @@ class AppTheme {
         letterSpacing: 0.25,
       ),
     ),
-    // Additional theme elements
+    
     chipTheme: ChipThemeData(
       backgroundColor: Colors.grey.shade200,
       disabledColor: Colors.grey.shade300,
@@ -324,7 +140,7 @@ class AppTheme {
     ),
   );
 
-  // Dark theme with improved contrast and accessibility
+  // Dark theme
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
@@ -333,7 +149,7 @@ class AppTheme {
       primary: primaryColor,
       secondary: secondaryColor,
       surface: const Color(0xFF1E1E1E),
-      error: const Color(0xFFFF5252), // Brighter red for dark theme
+      error: const Color(0xFFFF5252), 
       onPrimary: Colors.white,
       onSecondary: Colors.black,
       onSurface: Colors.white,
@@ -361,7 +177,7 @@ class AppTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.blue.shade300, // Lighter blue for dark theme
+        foregroundColor: Colors.blue.shade300, 
         side: BorderSide(color: Colors.blue.shade300),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -427,12 +243,12 @@ class AppTheme {
         letterSpacing: 0.25,
       ),
     ),
-    // Additional theme elements
+    
     chipTheme: const ChipThemeData(
       backgroundColor: Color(0xFF2C2C2C),
       disabledColor: Color(0xFF3E3E3E),
-      selectedColor: Color(0xFF3949AB), // Indigo
-      secondarySelectedColor: Color(0xFFFF8F00), // Amber
+      selectedColor: Color(0xFF3949AB), 
+      secondarySelectedColor: Color(0xFFFF8F00), 
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       labelStyle: TextStyle(color: Colors.white),
       secondaryLabelStyle: TextStyle(color: Colors.white),
@@ -440,7 +256,7 @@ class AppTheme {
     ),
     snackBarTheme: const SnackBarThemeData(
       backgroundColor: Color(0xFF323232),
-      actionTextColor: Color(0xFFFFB74D), // Lighter amber for dark theme
+      actionTextColor: Color(0xFFFFB74D), 
       contentTextStyle: TextStyle(color: Colors.white),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
@@ -449,7 +265,7 @@ class AppTheme {
     ),
   );
 
-  // Helper methods for task priority colors
+  
   static Color getPriorityColor(String priority, {bool isDark = false}) {
     switch (priority.toLowerCase()) {
       case 'high':
@@ -463,7 +279,7 @@ class AppTheme {
     }
   }
 
-  // Helper for completion status color
+  
   static Color getCompletionColor(bool isCompleted, {bool isDark = false}) {
     return isCompleted
         ? (isDark ? const Color(0xFF69F0AE) : successColor)

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskgenius/state/notification_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 
 class User {
@@ -34,10 +35,10 @@ class User {
     );
   }
 
-  // Serialize to JSON
+  
   String toJson() => json.encode(toMap());
 
-  // Create user from JSON
+  
   factory User.fromJson(String source) => User.fromMap(json.decode(source));
 
   // Create user from Firebase user
@@ -67,7 +68,7 @@ class AuthProvider extends ChangeNotifier {
   // Shared preferences key
   static const String _userKey = 'user_data';
 
-  // Getters
+  
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
@@ -77,7 +78,7 @@ class AuthProvider extends ChangeNotifier {
     _context = context;
   }
 
-  // Constructor - initialize Firebase Auth state listener
+  
   AuthProvider() {
     _initAuthListener();
     _loadUserFromPrefs();
@@ -89,6 +90,15 @@ class AuthProvider extends ChangeNotifier {
       firebase_auth.User? firebaseUser,
     ) async {
       if (firebaseUser != null) {
+        
+        
+        
+        if (_currentUser?.id == firebaseUser.uid) {
+          
+          await _getUserDataFromFirestore(firebaseUser);
+          return;
+        }
+
         // User is signed in
         await _getUserDataFromFirestore(firebaseUser);
       } else {
@@ -142,11 +152,19 @@ class AuthProvider extends ChangeNotifier {
           _context!,
           listen: false,
         ).setUser(_currentUser!.id);
+        // Set up NotificationProvider for this user
+  await Provider.of<NotificationProvider>(
+    _context!,
+    listen: false,
+  ).setUser(_currentUser!.id);
+
       }
+
+
       notifyListeners();
     } catch (e) {
       print('Error getting user data from Firestore: $e');
-      // Fallback to Firebase Auth data
+      
       _currentUser = User.fromFirebaseUser(firebaseUser);
       await _saveUserToPrefs(_currentUser!);
       // Set up TaskProvider for this user even in error case
@@ -155,7 +173,14 @@ class AuthProvider extends ChangeNotifier {
           _context!,
           listen: false,
         ).setUser(_currentUser!.id);
+        // Set up NotificationProvider for this user
+  await Provider.of<NotificationProvider>(
+    _context!,
+    listen: false,
+  ).setUser(_currentUser!.id);
+
       }
+      
       notifyListeners();
     }
   }
@@ -168,7 +193,7 @@ class AuthProvider extends ChangeNotifier {
       final userDoc = _firestore.collection('users').doc(user.id);
 
       await userDoc.set({
-        'uid': user.id, // Add this field
+        'uid': user.id, 
         'name': user.name,
         'email': user.email,
         'photoUrl': user.photoUrl,
@@ -273,25 +298,25 @@ class AuthProvider extends ChangeNotifier {
         return 'An account already exists with the same email but different sign-in credentials.';
       case 'network-request-failed':
         return 'Network connection failed. Please check your internet connection and try again.';
-      // Firestore errors (less common during auth but good to handle)
+      
       case 'permission-denied':
         return 'Permission denied. Please try again or contact support if this persists.';
       case 'unavailable':
         return 'Service is temporarily unavailable. Please try again later.';
       default:
-        // Log the original error for debugging but don't show to user
+        
         print('Unhandled error code: $code - $serverMessage');
         return 'An unexpected error occurred. Please try again.';
     }
   }
 
-  // Improved login method with better error handling
+  
   Future<bool> login(String email, String password) async {
     clearError();
     _setLoading(true);
 
     try {
-      // Check if email is provided
+      
       if (email.isEmpty) {
         _error = 'Please enter your email address.';
         _setLoading(false);
@@ -300,7 +325,7 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
 
-      // Check if password is provided
+      
       if (password.isEmpty) {
         _error = 'Please enter your password.';
         _setLoading(false);
@@ -323,7 +348,7 @@ class AuthProvider extends ChangeNotifier {
               .doc(userCredential.user!.uid)
               .update({'lastLogin': FieldValue.serverTimestamp()});
         } catch (firestoreError) {
-          // Just log the error but don't show to user
+          
           print(
             'Warning: Could not update lastLogin timestamp: $firestoreError',
           );
@@ -339,10 +364,10 @@ class AuthProvider extends ChangeNotifier {
       _autoClearErrorAfterDelay();
       return false;
     } on firebase_auth.FirebaseAuthException catch (e) {
-      // Use the helper method to get consistent user-friendly messages
+      
       _error = _getReadableErrorMessage(e.code, e.message);
 
-      // Log original error for debugging
+      
       print('Firebase Auth error during login: ${e.code} - ${e.message}');
 
       _setLoading(false);
@@ -350,7 +375,7 @@ class AuthProvider extends ChangeNotifier {
       _autoClearErrorAfterDelay();
       return false;
     } catch (e) {
-      // Handle general exceptions
+      
       print('Unexpected login error: ${e.toString()}');
 
       if (e.toString().contains('network')) {
@@ -367,7 +392,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Improved register method with better error handling
+  
   Future<bool> register(String name, String email, String password) async {
     clearError();
     _setLoading(true);
@@ -428,7 +453,7 @@ class AuthProvider extends ChangeNotifier {
           );
         }
 
-        // Sign out immediately so user needs to log in
+        
         await _firebaseAuth.signOut();
 
         _setLoading(false);
@@ -442,10 +467,10 @@ class AuthProvider extends ChangeNotifier {
       _autoClearErrorAfterDelay();
       return false;
     } on firebase_auth.FirebaseAuthException catch (e) {
-      // Use the helper method to get consistent user-friendly messages
+      
       _error = _getReadableErrorMessage(e.code, e.message);
 
-      // Log original error for debugging
+      
       print(
         'Firebase Auth error during registration: ${e.code} - ${e.message}',
       );
@@ -455,7 +480,7 @@ class AuthProvider extends ChangeNotifier {
       _autoClearErrorAfterDelay();
       return false;
     } catch (e) {
-      // Handle general exceptions
+      
       print('Unexpected registration error: ${e.toString()}');
 
       if (e.toString().contains('network')) {
@@ -478,11 +503,10 @@ class AuthProvider extends ChangeNotifier {
     if (_currentUser == null) return false;
 
     clearError();
-    _setLoading(true);
+    
 
     try {
       final firebase_auth.User? firebaseUser = _firebaseAuth.currentUser;
-
       if (firebaseUser == null) {
         _error = 'User not authenticated';
         _setLoading(false);
@@ -495,24 +519,12 @@ class AuthProvider extends ChangeNotifier {
         await firebaseUser.updateDisplayName(name);
       }
 
-      // Create updated user data
-      final updatedData = <String, dynamic>{
-        'lastUpdated': FieldValue.serverTimestamp(),
-      };
-
-      if (name != null && name.isNotEmpty) {
-        updatedData['name'] = name;
-      }
-
-      if (photoUrl != null) {
-        updatedData['photoUrl'] = photoUrl;
-      }
-
       // Update in Firestore
-      await _firestore
-          .collection('users')
-          .doc(_currentUser!.id)
-          .update(updatedData);
+      await _firestore.collection('users').doc(_currentUser!.id).update({
+        'name': name ?? _currentUser!.name,
+        'photoUrl': photoUrl ?? _currentUser!.photoUrl,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
 
       // Update local user object
       _currentUser = User(
@@ -525,12 +537,12 @@ class AuthProvider extends ChangeNotifier {
       // Save to shared prefs
       await _saveUserToPrefs(_currentUser!);
 
-      _setLoading(false);
+      
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Failed to update profile: $e';
-      _setLoading(false);
+      _error = 'Failed to update profile: ${e.toString()}';
+      
       notifyListeners();
       return false;
     }
@@ -626,6 +638,8 @@ class AuthProvider extends ChangeNotifier {
       // Clear TaskProvider data before logging out
       if (_context != null) {
         Provider.of<TaskProvider>(_context!, listen: false).clearUser();
+              Provider.of<NotificationProvider>(_context!, listen: false).clearUser();
+
       }
       await _firebaseAuth.signOut();
       _currentUser = null;

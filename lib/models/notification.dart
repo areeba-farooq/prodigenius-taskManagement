@@ -1,20 +1,17 @@
-// lib/models/app_notification.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-
-
-// Notification types
 enum NotificationType {
-  task, // Task due reminder
-  deadline, // Task deadline
-  digest, // Daily task digest
-  scheduled, // AI-scheduled task time
+  task, 
+  deadline, 
+  digest, 
+  scheduled, 
 }
 class AppNotification {
   final String id;
   final String title;
   final String body;
   final DateTime timestamp;
-  final String? taskId; // Optional task reference
+  final String? taskId; 
   bool isRead;
   final NotificationType type;
 
@@ -28,13 +25,15 @@ class AppNotification {
     required this.type,
   });
 
-  // Create from notification data
+  
   factory AppNotification.fromMap(Map<String, dynamic> map) {
     return AppNotification(
       id: map['id'],
       title: map['title'],
       body: map['body'],
-      timestamp: DateTime.parse(map['timestamp']),
+      
+          timestamp: (map['timestamp'] as Timestamp).toDate(), 
+
       taskId: map['taskId'],
       isRead: map['isRead'] ?? false,
       type: NotificationType.values.firstWhere(
@@ -44,13 +43,15 @@ class AppNotification {
     );
   }
 
-  // Convert to map for storage
+  
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'body': body,
-      'timestamp': timestamp.toIso8601String(),
+      
+          'timestamp': Timestamp.fromDate(timestamp), 
+
       'taskId': taskId,
       'isRead': isRead,
       'type': type.toString().split('.').last,

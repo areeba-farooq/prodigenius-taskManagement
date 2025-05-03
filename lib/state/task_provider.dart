@@ -1,17 +1,21 @@
-//******************************************** */
+
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/services/ai_service.dart';
+import 'package:taskgenius/services/database_service.dart';
 import 'package:taskgenius/services/notification_service.dart';
 import 'package:taskgenius/services/productivity_Service.dart';
 
 class TaskProvider extends ChangeNotifier {
-  // Add user ID to make keys user-specific
+  final FirestoreService _firestoreService = FirestoreService();
+  StreamSubscription<List<Task>>? _tasksSubscription;
+  
   String? _currentUserId;
 
-  // Update keys to include user ID
+  
   String get _tasksKey =>
       _currentUserId != null ? 'tasks_data_$_currentUserId' : 'tasks_data';
   String get _categoriesKey =>
@@ -23,10 +27,6 @@ class TaskProvider extends ChangeNotifier {
           ? 'user_preferences_$_currentUserId'
           : 'user_preferences';
 
-  // static const String _tasksKey = 'tasks_data';
-  // static const String _categoriesKey = 'task_categories';
-  // static const String _userPreferencesKey = 'user_preferences';
-
   List<Task> _tasks = [];
   List<String> _categories = [
     'Work',
@@ -37,28 +37,26 @@ class TaskProvider extends ChangeNotifier {
     'Travel',
   ];
 
-  // User preferences for scheduling
+  
   Map<String, dynamic> _userPreferences = {
-    'availableHours': 8, // Default to 8 hours available per day
+    'availableHours': 8, 
     'timePreference':
-        1, // Default to Afternoon (0=Morning, 1=Afternoon, 2=Evening)
+        1, 
   };
 
   bool _isInitialized = false;
 
-  // Constructor
-  TaskProvider() {
-    // _init();
-  }
+
   Future<void> setUser(String userId) async {
     if (_currentUserId == userId && _isInitialized) {
-      return; // Already initialized for this user
+      return; 
     }
 
     _currentUserId = userId;
     _isInitialized = false;
+    await _tasksSubscription?.cancel();
 
-    // Reset data
+    
     _tasks.clear();
     _categories = ['Work', 'Study', 'Personal', 'Shopping', 'Health', 'Travel'];
     _userPreferences = {'availableHours': 8, 'timePreference': 1};
@@ -73,15 +71,30 @@ class TaskProvider extends ChangeNotifier {
     _tasks.clear();
     _categories = ['Work', 'Study', 'Personal', 'Shopping', 'Health', 'Travel'];
     _userPreferences = {'availableHours': 8, 'timePreference': 1};
+    _tasksSubscription?.cancel();
+
     notifyListeners();
   }
 
   // Initialize and load data
   Future<void> _init() async {
-    if (!_isInitialized) {
-      await _loadTasks();
-      await _loadCategories();
-      await _loadUserPreferences();
+    if (!_isInitialized && _currentUserId != null) {
+      // Load categories and preferences
+      _categories = await _firestoreService.getCategories(_currentUserId!);
+      _userPreferences = await _firestoreService.getUserPreferences(
+        _currentUserId!,
+      );
+
+      // Subscribe to tasks
+      _tasksSubscription = _firestoreService.getTasks(_currentUserId!).listen((
+        tasks,
+      ) {
+        _tasks = tasks;
+        notifyListeners();
+      });
+      
+      
+      
       _isInitialized = true;
       notifyListeners();
       print("TaskProvider initialized with ${_tasks.length} tasks");
@@ -138,12 +151,12 @@ class TaskProvider extends ChangeNotifier {
       if (savedCategories != null && savedCategories.isNotEmpty) {
         _categories = savedCategories;
       } else {
-        // Save default categories if none exist
+        
         await _saveCategories();
       }
     } catch (e) {
       print("Error loading categories: $e");
-      // Keep using the default categories
+      
     }
   }
 
@@ -169,12 +182,12 @@ class TaskProvider extends ChangeNotifier {
       if (preferencesJson != null) {
         _userPreferences = json.decode(preferencesJson) as Map<String, dynamic>;
       } else {
-        // Save default preferences if none exist
+        
         await _saveUserPreferences();
       }
     } catch (e) {
       print("Error loading user preferences: $e");
-      // Keep using the default preferences
+      
     }
   }
 
@@ -190,10 +203,10 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
-  // Check if provider is initialized
+  
   bool get isInitialized => _isInitialized;
 
-  // Getters
+  
   List<Task> get tasks => _tasks;
   List<String> get categories => _categories;
   Map<String, dynamic> get userPreferences => _userPreferences;
@@ -259,7 +272,8 @@ class TaskProvider extends ChangeNotifier {
     int? availableHours,
     int? timePreference,
   }) async {
-    await _ensureInitialized();
+    
+    if (_currentUserId == null) return;
 
     if (availableHours != null) {
       _userPreferences['availableHours'] = availableHours;
@@ -269,16 +283,22 @@ class TaskProvider extends ChangeNotifier {
       _userPreferences['timePreference'] = timePreference;
     }
 
-    await _saveUserPreferences();
+    
+    await _firestoreService.saveUserPreferences(
+      _currentUserId!,
+      _userPreferences,
+    );
+
     notifyListeners();
   }
 
-  // Add a new task
+  
   Future<void> addTask(Task task) async {
     try {
-      await _ensureInitialized();
+      if (_currentUserId == null) return;
+      
 
-      // Debug: Print the task being added
+      
       print("Adding task: ${task.title} with ID: ${task.id}");
 
       // Schedule the task using AI
@@ -302,16 +322,18 @@ class TaskProvider extends ChangeNotifier {
         ),
       );
 
-      // Add task to list
+      
       _tasks.add(scheduledTask);
 
-      // Save all tasks to SharedPreferences
-      await _saveTasks();
+      
+      
+      
+      await _firestoreService.saveTask(_currentUserId!, scheduledTask);
 
-      // Schedule notifications for the new task
+      
       _scheduleTaskNotifications(scheduledTask);
 
-      // Debug: Print current task count
+      
       print("Task count after adding: ${_tasks.length}");
 
       notifyListeners();
@@ -336,63 +358,21 @@ class TaskProvider extends ChangeNotifier {
     );
   }
 
-  // Add a new category
+  
   Future<void> addCategory(String category) async {
-    await _ensureInitialized();
+    
+    if (_currentUserId == null) return;
+
     if (!_categories.contains(category)) {
       _categories.add(category);
-      await _saveCategories();
+      
+      await _firestoreService.saveCategories(_currentUserId!, _categories);
+
       notifyListeners();
     }
   }
 
-  // Toggle task completion status
-  // Future<void> toggleTaskCompletion(String taskId) async {
-  //   try {
-  //     await _ensureInitialized();
-
-  //     final index = _tasks.indexWhere((task) => task.id == taskId);
-  //     if (index != -1) {
-  //       final oldTask = _tasks[index];
-
-  //       // Create a new task with the updated completion status
-  //       final updatedTask = Task(
-  //         id: oldTask.id,
-  //         title: oldTask.title,
-  //         category: oldTask.category,
-  //         dueDate: oldTask.dueDate,
-  //         urgencyLevel: oldTask.urgencyLevel,
-  //         priority: oldTask.priority,
-  //         isCompleted: !oldTask.isCompleted,
-  //         estimatedDuration: oldTask.estimatedDuration,
-  //         scheduledDay: oldTask.scheduledDay,
-  //         scheduledTimeSlot: oldTask.scheduledTimeSlot,
-  //         scheduledTimeDescription: oldTask.scheduledTimeDescription,
-  //       );
-
-  //       // Update the task in the list
-  //       _tasks[index] = updatedTask;
-
-  //       // Save updated tasks
-  //       await _saveTasks();
-
-  //       // If task is now completed, cancel notifications
-  //       if (updatedTask.isCompleted) {
-  //         NotificationService.instance.cancelTaskNotifications(taskId);
-  //       }
-  //       // If task is now uncompleted, schedule notifications
-  //       else {
-  //         _scheduleTaskNotifications(updatedTask);
-  //       }
-
-  //       notifyListeners();
-  //     }
-  //   } catch (e) {
-  //     print("Error toggling task completion: $e");
-  //   }
-  // }
-
-  // Modified toggleTaskCompletion method
+  
   Future<void> toggleTaskCompletion(String taskId) async {
     try {
       await _ensureInitialized();
@@ -416,10 +396,10 @@ class TaskProvider extends ChangeNotifier {
           scheduledTimeDescription: oldTask.scheduledTimeDescription,
         );
 
-        // Update the task in the list
+        
         _tasks[index] = updatedTask;
 
-        // Save updated tasks
+        
         await _saveTasks();
 
         // If task is now completed, record the completion
@@ -467,11 +447,12 @@ class TaskProvider extends ChangeNotifier {
   // Update an existing task
   Future<void> updateTask(Task updatedTask) async {
     try {
-      await _ensureInitialized();
+      
+      if (_currentUserId == null) return;
 
       final index = _tasks.indexWhere((task) => task.id == updatedTask.id);
       if (index != -1) {
-        // Get the old task before updating
+        
         final oldTask = _tasks[index];
 
         // If priority, duration, due date changed, recalculate schedule
@@ -502,11 +483,13 @@ class TaskProvider extends ChangeNotifier {
           );
         }
 
-        // Update task in the list
+        
         _tasks[index] = taskToUpdate;
 
-        // Save updated tasks
-        await _saveTasks();
+        
+        
+        // Update in Firestore
+        await _firestoreService.saveTask(_currentUserId!, taskToUpdate);
 
         // Cancel existing notifications if the task was completed
         if (!oldTask.isCompleted && taskToUpdate.isCompleted) {
@@ -528,16 +511,18 @@ class TaskProvider extends ChangeNotifier {
   // Delete a task
   Future<void> deleteTask(String taskId) async {
     try {
-      await _ensureInitialized();
+      
+      if (_currentUserId == null) return;
 
       // Cancel notifications before deleting
       NotificationService.instance.cancelTaskNotifications(taskId);
+      await _firestoreService.deleteTask(_currentUserId!, taskId);
 
-      // Remove task from list
-      _tasks.removeWhere((task) => task.id == taskId);
+      
+      
 
-      // Save updated tasks
-      await _saveTasks();
+      
+      
 
       notifyListeners();
     } catch (e) {
@@ -591,9 +576,9 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
-  // Helper method to schedule task notifications
+  // Method to schedule task notifications
   void _scheduleTaskNotifications(Task task) {
-    // Skip completed tasks
+    
     if (task.isCompleted) return;
 
     // Schedule reminder notification (30 minutes before deadline for high priority)
@@ -671,15 +656,11 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
-  // Clear all tasks (for testing or reset functionality)
-  Future<void> clearAllTasks() async {
-    try {
-      await _ensureInitialized();
-      _tasks = [];
-      await _saveTasks();
-      notifyListeners();
-    } catch (e) {
-      print("Error clearing tasks: $e");
-    }
+
+  // Remember to dispose of the subscription
+  @override
+  void dispose() {
+    _tasksSubscription?.cancel();
+    super.dispose();
   }
 }

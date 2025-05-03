@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:taskgenius/screens/reset_password_screen.dart';
 import 'package:taskgenius/screens/signup_screen.dart';
 import 'package:taskgenius/state/auth_provider.dart';
 
@@ -54,7 +55,6 @@ class _LoginScreenState extends State<LoginScreen> {
       // Hide keyboard
       FocusScope.of(context).unfocus();
 
-      // Get auth provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       // Clear any previous errors when starting a new login attempt
@@ -67,13 +67,80 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       // If login successful and widget is still mounted, navigate to home
       if (success && mounted) {
-        // Add a small delay to allow state to propagate
+        // Small delay to allow state to propagate
         await Future.delayed(const Duration(milliseconds: 300));
 
         // Force app to rebuild from root by triggering a rebuild
-        Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        if (mounted) {
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+        }
       }
     }
+  }
+
+  Future<void> _showForgotPasswordDialog() async {
+    final emailController = TextEditingController();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reset Password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Enter your email to receive a password reset link'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emailController,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'Your registered email',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                keyboardType: TextInputType.emailAddress,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (emailController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter your email')),
+                  );
+                  return;
+                }
+
+                final success = await authProvider.resetPassword(
+                  emailController.text,
+                );
+                if (success && mounted) {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => PasswordResetSentScreen(
+                            email: emailController.text,
+                          ),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Send Link'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -87,10 +154,13 @@ class _LoginScreenState extends State<LoginScreen> {
             height: double.infinity,
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor,
-              image: const DecorationImage(
-                image: AssetImage('assets/bg.jpeg'),
-                fit: BoxFit.cover,
-                colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Theme.of(context).primaryColor,
+                  Theme.of(context).colorScheme.secondary,
+                ],
               ),
             ),
           ),
@@ -110,15 +180,18 @@ class _LoginScreenState extends State<LoginScreen> {
             maxChildSize: 0.9,
             builder: (context, scrollController) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(24),
                     topRight: Radius.circular(24),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black12,
+                      color:
+                          Theme.of(context).brightness == Brightness.dark
+                              ? Colors.black.withOpacity(0.5)
+                              : Colors.black12,
                       blurRadius: 10,
                       spreadRadius: 5,
                     ),
@@ -135,7 +208,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Form title
                               const Center(
                                 child: Text(
                                   'Welcome Back',
@@ -183,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                       ),
-                                      // Add a close button to manually dismiss errors
+
                                       IconButton(
                                         icon: Icon(
                                           Icons.close,
@@ -211,6 +283,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   prefixIcon: const Icon(Icons.email),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -240,6 +323,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -264,10 +358,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ],
                                   ),
                                   TextButton(
-                                    onPressed: () {
-                                      // Forgot password functionality
-                                    },
-                                    child: const Text('Forgot Password?'),
+                                    onPressed: _showForgotPasswordDialog,
+
+                                    child: Text(
+                                      'Forgot Password?',
+                                      style: TextStyle(
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                      ),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -305,7 +406,15 @@ class _LoginScreenState extends State<LoginScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Text('Don\'t have an account?'),
+                                  Text(
+                                    'Don\'t have an account?',
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                    ),
+                                  ),
                                   TextButton(
                                     onPressed: () {
                                       Navigator.pushReplacement(
@@ -316,10 +425,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       );
                                     },
-                                    child: const Text(
+                                    child: Text(
                                       'Sign Up',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                       ),
                                     ),
                                   ),

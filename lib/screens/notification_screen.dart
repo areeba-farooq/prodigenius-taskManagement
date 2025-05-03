@@ -1,6 +1,6 @@
-//******************************************* */
 
-// lib/screens/notification_screen.dart
+
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -108,7 +108,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       timeAgo = DateFormat('MMM d').format(notification.timestamp);
     }
 
-    // Icon based on notification type
+    
     IconData notificationIcon;
     Color iconColor;
 
@@ -141,7 +141,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       direction: DismissDirection.endToStart,
       onDismissed: (direction) {
-        // Remove the notification (you should implement this method)
+        
         Provider.of<NotificationProvider>(
           context,
           listen: false,

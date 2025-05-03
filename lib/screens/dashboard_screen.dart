@@ -16,7 +16,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _timeRange = 'Week';
-  // Add these fields for productivity data
+  
   List<String> _productivityInsights = [];
   Map<String, dynamic> _productivityStats = {};
   bool _isLoadingProductivity = true;
@@ -27,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     _loadProductivityData();
   }
 
-  // Add this method to load productivity data
+  
   Future<void> _loadProductivityData() async {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     try {
@@ -117,7 +117,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Overview Tab
   Widget _buildOverviewTab(List<Task> tasks) {
-    // Calculate task metrics
+    
     final totalTasks = tasks.length;
     final completedTasks = tasks.where((task) => task.isCompleted).length;
     final pendingTasks = totalTasks - completedTasks;
@@ -281,7 +281,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Categories Tab
   Widget _buildCategoriesTab(List<Task> tasks, List<String> categories) {
-    // Calculate tasks per category
+    
     final Map<String, int> categoryCount = {};
     final Map<String, int> completedCount = {};
 
@@ -400,7 +400,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Helper widget for ClipRRect workaround
+  // Widget for ClipRRect workaround
   Widget clipRounded({
     required BorderRadius borderRadius,
     required Widget child,
@@ -408,158 +408,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return ClipRRect(borderRadius: borderRadius, child: child);
   }
 
-  // Productivity Tab
-  // Widget _buildProductivityTab(List<Task> tasks) {
-  //   // Get dates for time range
-  //   final DateTime now = DateTime.now();
-  //   DateTime startDate;
-
-  //   switch (_timeRange) {
-  //     case 'Week':
-  //       startDate = now.subtract(const Duration(days: 7));
-  //       break;
-  //     case 'Month':
-  //       startDate = DateTime(now.year, now.month - 1, now.day);
-  //       break;
-  //     case 'Year':
-  //       startDate = DateTime(now.year - 1, now.month, now.day);
-  //       break;
-  //     default:
-  //       startDate = now.subtract(const Duration(days: 7));
-  //   }
-
-  //   // Filter tasks within date range
-  //   final filteredTasks =
-  //       tasks
-  //           .where(
-  //             (task) =>
-  //                 task.dueDate.isAfter(startDate) ||
-  //                 task.dueDate.isAtSameMomentAs(startDate),
-  //           )
-  //           .toList();
-
-  //   // Group tasks by date
-  //   final Map<String, int> completedByDate = {};
-  //   final Map<String, int> addedByDate = {};
-
-  //   // Format pattern based on time range
-  //   String dateFormat;
-  //   if (_timeRange == 'Week') {
-  //     dateFormat = 'E'; // Abbreviated day name
-  //   } else if (_timeRange == 'Month') {
-  //     dateFormat = 'dd'; // Day of month
-  //   } else {
-  //     dateFormat = 'MMM'; // Abbreviated month name
-  //   }
-
-  //   // Initialize dates in range
-  //   for (int i = 0; i <= now.difference(startDate).inDays; i++) {
-  //     final date = startDate.add(Duration(days: i));
-  //     final dateKey = DateFormat(dateFormat).format(date);
-
-  //     completedByDate[dateKey] = 0;
-  //     addedByDate[dateKey] = 0;
-  //   }
-
-  //   // Count tasks
-  //   for (final task in filteredTasks) {
-  //     final dateKey = DateFormat(dateFormat).format(task.dueDate);
-
-  //     // Count as added
-  //     if (addedByDate.containsKey(dateKey)) {
-  //       addedByDate[dateKey] = (addedByDate[dateKey] ?? 0) + 1;
-  //     }
-
-  //     // Count as completed if completed
-  //     if (task.isCompleted && completedByDate.containsKey(dateKey)) {
-  //       completedByDate[dateKey] = (completedByDate[dateKey] ?? 0) + 1;
-  //     }
-  //   }
-
-  //   // Calculate productivity metrics
-  //   int totalCompleted = 0;
-  //   for (var task in filteredTasks) {
-  //     if (task.isCompleted) totalCompleted++;
-  //   }
-
-  //   final productivityRate =
-  //       filteredTasks.isNotEmpty
-  //           ? (totalCompleted / filteredTasks.length * 100).toStringAsFixed(1)
-  //           : '0.0';
-
-  //   return SingleChildScrollView(
-  //     padding: const EdgeInsets.all(16.0),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Card(
-  //           child: Padding(
-  //             padding: const EdgeInsets.all(16.0),
-  //             child: Row(
-  //               children: [
-  //                 Column(
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     Text(
-  //                       'Productivity Score',
-  //                       style: Theme.of(context).textTheme.titleMedium,
-  //                     ),
-  //                     const SizedBox(height: 8),
-  //                     Text(
-  //                       '$productivityRate%',
-  //                       style: Theme.of(
-  //                         context,
-  //                       ).textTheme.headlineMedium?.copyWith(
-  //                         fontWeight: FontWeight.bold,
-  //                         color: _getProductivityColor(
-  //                           double.parse(productivityRate),
-  //                         ),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //                 const Spacer(),
-  //                 Container(
-  //                   padding: const EdgeInsets.all(12),
-  //                   decoration: BoxDecoration(
-  //                     color: _getProductivityColor(
-  //                       double.parse(productivityRate),
-  //                     ).withOpacity(0.2),
-  //                     shape: BoxShape.circle,
-  //                   ),
-  //                   child: Icon(
-  //                     _getProductivityIcon(double.parse(productivityRate)),
-  //                     color: _getProductivityColor(
-  //                       double.parse(productivityRate),
-  //                     ),
-  //                     size: 32,
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-
-  //         const SizedBox(height: 24),
-  //         Text(
-  //           'Productivity Over Time',
-  //           style: Theme.of(context).textTheme.titleLarge,
-  //         ),
-  //         const SizedBox(height: 16),
-  //         SizedBox(
-  //           height: 250,
-  //           child: _buildProductivityLineChart(completedByDate, addedByDate),
-  //         ),
-
-  //         const SizedBox(height: 24),
-  //         Text('Task Activity', style: Theme.of(context).textTheme.titleLarge),
-  //         const SizedBox(height: 16),
-  //         _buildActivitySummary(filteredTasks),
-  //       ],
-  //     ),
-  //   );
-  // }
-  // Modified Productivity Tab with AI insights
+  // Productivity Tab with AI insights
   Widget _buildProductivityTab(List<Task> tasks) {
     if (_isLoadingProductivity) {
       return const Center(child: CircularProgressIndicator());
@@ -715,14 +564,13 @@ class _DashboardScreenState extends State<DashboardScreen>
 
           const SizedBox(height: 24),
 
-          // Productivity Over Time (your existing chart)
+          // Productivity Over Time 
           Text(
             'Productivity Over Time',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
 
-          // [The rest of your existing productivity chart code goes here]
           _buildProductivityTimelineSection(tasks),
         ],
       ),
@@ -759,7 +607,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Helper method for building the existing productivity timeline
+  // Method for building the existing productivity timeline
   Widget _buildProductivityTimelineSection(List<Task> tasks) {
     final DateTime now = DateTime.now();
     DateTime startDate;
@@ -830,7 +678,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // New helper methods for productivity insights
+  // Methods for productivity insights
   IconData _getInsightIcon(String insight) {
     if (insight.contains('productive on')) {
       return Icons.calendar_today;
@@ -846,7 +694,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return Icons.lightbulb_outline;
   }
 
-  // Helper method to build metric cards
+  // Method to build metric cards
   Widget _buildMetricCard(
     String title,
     String value,
@@ -898,7 +746,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                // Check if there are categories
+                
                 if (categoryCount.isEmpty ||
                     value.toInt() >= categoryCount.length) {
                   return const SizedBox();
@@ -1063,7 +911,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Helper to generate spots for line chart
+  // Generate spots for line chart
   List<FlSpot> _getSpots(Map<String, int> dataMap) {
     final List<FlSpot> spots = [];
 
@@ -1144,7 +992,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Helper to check if date is today
+  // Check if date is today
   bool _isDateToday(DateTime date) {
     final now = DateTime.now();
     return date.year == now.year &&
@@ -1152,7 +1000,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         date.day == now.day;
   }
 
-  // Helper to build legend item
+  // Build legend item
   Widget _buildLegendItem(String label, Color color) {
     return Row(
       children: [
@@ -1177,7 +1025,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 'Health':
         return Colors.green;
       default:
-        // Generate a color based on category name
+        
         return Color((category.hashCode & 0xFFFFFF) | 0xFF000000);
     }
   }

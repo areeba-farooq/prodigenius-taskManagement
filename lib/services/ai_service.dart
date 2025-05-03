@@ -1,4 +1,4 @@
-// Priority predictor using Firebase ML Kit
+
 import 'dart:math' as math;
 
 import 'package:firebase_ml_model_downloader/firebase_ml_model_downloader.dart';
@@ -12,8 +12,8 @@ class PriorityPredictor {
   // Initialize the model
   static Future<void> initModel() async {
     try {
-      // For this example, we're using a simple on-device model
-      // In a real app, you'd download a custom TFLite model from Firebase
+      
+      
       final modelInfo = await FirebaseModelDownloader.instance.getModel(
         "task_priority_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
@@ -29,10 +29,24 @@ class PriorityPredictor {
       _interpreter = Interpreter.fromFile(modelInfo.file);
     } catch (e) {
       print("Error loading model: $e");
-      // Fallback to rule-based prediction if model fails to load
+      
     }
   }
 
+
+  // find index of max value
+  static int _findMaxIndex(List<double> values) {
+    if (values.isEmpty) return 0;
+    double maxValue = values[0];
+    int maxIndex = 0;
+    for (int i = 1; i < values.length; i++) {
+      if (values[i] > maxValue) {
+        maxValue = values[i];
+        maxIndex = i;
+      }
+    }
+    return maxIndex;
+  }
   // Predict priority based on features
   static String predictPriority(DateTime dueDate, int urgencyLevel) {
     // If ML model is available, use it
@@ -51,9 +65,12 @@ class PriorityPredictor {
 
         // Run inference
         _interpreter!.run(input, output);
+   
+        final outputList = output[0] as List<double>;
+        
+        
+          final predictedClass = _findMaxIndex(outputList);
 
-        // Get the predicted class (0 = Low, 1 = Medium, 2 = High)
-        final predictedClass = output[0].indexOf(output[0].reduce(math.max));
 
         switch (predictedClass) {
           case 0:
@@ -67,7 +84,7 @@ class PriorityPredictor {
         }
       } catch (e) {
         print("Error during prediction: $e");
-        // Fall back to rule-based prediction
+        
         return _ruleBasedPriority(dueDate, urgencyLevel);
       }
     } else {
@@ -108,7 +125,7 @@ class PriorityPredictor {
 class DurationEstimator {
   static Interpreter? _interpreter;
 
-  // Category mappings (must match the model training categories)
+  // Category mappings
   static const Map<String, int> categoryMapping = {
     'Work': 0,
     'Personal': 1,
@@ -121,7 +138,7 @@ class DurationEstimator {
   // Initialize the model
   static Future<void> initModel() async {
     try {
-      // Download the custom TFLite model from Firebase
+      
       final modelInfo = await FirebaseModelDownloader.instance.getModel(
         "task_duration_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
@@ -138,7 +155,7 @@ class DurationEstimator {
       debugPrint("Duration estimation model loaded successfully");
     } catch (e) {
       debugPrint("Error loading duration estimation model: $e");
-      // We'll fall back to rule-based estimation if model fails to load
+      
     }
   }
 
@@ -179,7 +196,7 @@ class DurationEstimator {
         return Duration(minutes: predictedMinutes.round());
       } catch (e) {
         debugPrint("Error during duration prediction: $e");
-        // Fall back to rule-based estimation
+        
         return _ruleBasedDurationEstimate(category, urgencyLevel, daysUntilDue);
       }
     } else {
@@ -202,29 +219,29 @@ class DurationEstimator {
         baseDuration = 60; // 1 hour
         break;
       case 'Personal':
-        baseDuration = 30; // 30 minutes
+        baseDuration = 30; 
         break;
       case 'Study':
-        baseDuration = 45; // 45 minutes
+        baseDuration = 45; 
         break;
       case 'Health':
-        baseDuration = 40; // 40 minutes
+        baseDuration = 40; 
         break;
       case 'Shopping':
-        baseDuration = 25; // 25 minutes
+        baseDuration = 25; 
         break;
       case 'Travel':
         baseDuration = 90; // 1.5 hours
         break;
       default:
-        baseDuration = 45; // Default to 45 minutes
+        baseDuration = 45; 
     }
 
-    // Urgency adjustment factor - fixed math operation to avoid the generic type issue
+    
     // Higher urgency typically means task needs to be done faster
     double urgencyFactor = 0.8 + (urgencyLevel * 0.1); // 1=90%, 3=110%, 5=130%
 
-    // Due date adjustment factor
+    
     // Tasks due sooner might need to be done more quickly
     double dueDateFactor = 1.0;
     if (daysUntilDue <= 1) {
@@ -243,7 +260,7 @@ class DurationEstimator {
     return Duration(minutes: calculatedMinutes);
   }
 
-  // Format a duration to a user-friendly string
+  
   static String formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
@@ -273,7 +290,7 @@ class TaskScheduler {
   // Initialize the models
   static Future<void> initModels() async {
     try {
-      // Download the day model from Firebase
+      
       final dayModelInfo = await FirebaseModelDownloader.instance.getModel(
         "task_schedule_day_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
@@ -306,8 +323,21 @@ class TaskScheduler {
       debugPrint("Task scheduler models loaded successfully");
     } catch (e) {
       debugPrint("Error loading task scheduler models: $e");
-      // We'll fall back to rule-based scheduling if models fail to load
+      
     }
+  }
+   // find index of max value
+  static int _findMaxIndex(List<double> values) {
+    if (values.isEmpty) return 0;
+    double maxValue = values[0];
+    int maxIndex = 0;
+    for (int i = 1; i < values.length; i++) {
+      if (values[i] > maxValue) {
+        maxValue = values[i];
+        maxIndex = i;
+      }
+    }
+    return maxIndex;
   }
 
   // Get scheduled day and time slot for a task
@@ -342,16 +372,24 @@ class TaskScheduler {
         // Day model inference
         var dayOutput = List.filled(1 * 8, 0.0).reshape([1, 8]);
         _dayInterpreter!.run(input, dayOutput);
-        final predictedDay = dayOutput[0].indexOf(
-          dayOutput[0].reduce(math.max),
-        );
+                final dayOutputList = dayOutput[0] as List<double>;
+
+                final predictedDay = _findMaxIndex(dayOutputList);
+
+        
+        
+        
 
         // Time slot model inference
         var timeOutput = List.filled(1 * 3, 0.0).reshape([1, 3]);
         _timeInterpreter!.run(input, timeOutput);
-        final predictedTimeSlot = timeOutput[0].indexOf(
-          timeOutput[0].reduce(math.max),
-        );
+                final timeOutputList = timeOutput[0] as List<double>;
+
+                final predictedTimeSlot = _findMaxIndex(timeOutputList);
+
+        
+        
+        
 
         // Ensure day doesn't exceed due date
         final scheduledDay = math.min(predictedDay, daysUntilDue);
@@ -363,7 +401,7 @@ class TaskScheduler {
         };
       } catch (e) {
         debugPrint("Error during schedule prediction: $e");
-        // Fall back to rule-based scheduling
+        
         return _ruleBasedScheduling(
           priority,
           duration,
@@ -411,7 +449,7 @@ class TaskScheduler {
     final durationInHours = duration.inMinutes / 60;
 
     if (durationInHours > userAvailabilityHours / 2) {
-      // For tasks that take up significant chunk of available time,
+      
       // schedule for when user likely has most time
       if (timePreference == 0) {
         // Morning preference
@@ -420,7 +458,7 @@ class TaskScheduler {
         // Evening preference
         scheduledTimeSlot = 2;
       } else {
-        scheduledTimeSlot = 1; // Default to afternoon
+        scheduledTimeSlot = 1; 
       }
     } else {
       // For shorter tasks, follow user's time preference

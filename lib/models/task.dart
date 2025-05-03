@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 class Task {
@@ -27,13 +28,15 @@ class Task {
     this.scheduledTimeDescription,
   }) : id = id ?? const Uuid().v4();
 
-  // Convert Task to a map
+  
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'category': category,
-      'dueDate': dueDate.millisecondsSinceEpoch,
+      
+          'dueDate': Timestamp.fromDate(dueDate), 
+
       'urgencyLevel': urgencyLevel,
       'priority': priority,
       'isCompleted': isCompleted,
@@ -41,16 +44,20 @@ class Task {
       'scheduledDay': scheduledDay,
       'scheduledTimeSlot': scheduledTimeSlot,
       'scheduledTimeDescription': scheduledTimeDescription,
+          'createdAt': FieldValue.serverTimestamp(), 
+
     };
   }
 
-  // Create Task from a map
+  
   factory Task.fromMap(Map<String, dynamic> map) {
     return Task(
       id: map['id'],
       title: map['title'],
       category: map['category'],
-      dueDate: DateTime.fromMillisecondsSinceEpoch(map['dueDate']),
+      
+          dueDate: (map['dueDate'] as Timestamp).toDate(), 
+
       urgencyLevel: map['urgencyLevel'],
       priority: map['priority'],
       isCompleted: map['isCompleted'],
@@ -61,7 +68,7 @@ class Task {
     );
   }
 
-  // Create a copy of a Task with some modified fields
+  
   Task copyWith({
     String? title,
     String? category,

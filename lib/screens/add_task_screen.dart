@@ -1,4 +1,3 @@
-//***************************************** */
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
@@ -17,10 +16,10 @@ class _TaskInputScreenState extends State<TaskInputScreen> {
   final _titleController = TextEditingController();
   String _selectedCategory = 'Work';
   DateTime _selectedDate = DateTime.now();
-  int _urgencyLevel = 3; // Default mid-level urgency
+  int _urgencyLevel = 3; 
   String _predictedPriority = "Medium";
   Duration _estimatedDuration = const Duration(minutes: 30);
-  // Scheduling fields
+  
   Map<String, dynamic>? _scheduleSuggestion;
   @override
   void initState() {
@@ -398,7 +397,7 @@ class _TaskInputScreenState extends State<TaskInputScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        // Create a new task with AI-suggested priority and duration
+                        
                         // Create a new task with AI-suggested priority and duration
                         final newTask = Task(
                           title: _titleController.text,
@@ -421,7 +420,7 @@ class _TaskInputScreenState extends State<TaskInputScreen> {
                         // Add task using provider
                         taskProvider.addTask(newTask);
 
-                        // Clear the form
+                        
                         _titleController.clear();
                         setState(() {
                           _urgencyLevel = 3;

@@ -7,7 +7,7 @@ class ProductivityService {
   static const String _completionHistoryKey = 'task_completion_history';
   static const String _productivityInsightsKey = 'productivity_insights';
 
-  // Save task completion event
+  
   static Future<void> recordTaskCompletion(Task task) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -247,7 +247,7 @@ class ProductivityService {
           streak++;
           lastDate = completedDate;
         } else {
-          // Streak broken
+          
           break;
         }
       }
@@ -256,7 +256,7 @@ class ProductivityService {
     return streak;
   }
 
-  // Helper method to convert day number to name
+  // Method to convert day number to name
   static String _getDayName(int dayNumber) {
     switch (dayNumber) {
       case 1: return 'Monday';
