@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:taskgenius/firebase_options.dart';
-import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/screens/add_task_screen.dart';
 import 'package:taskgenius/screens/dashboard_screen.dart';
 import 'package:taskgenius/screens/home_screen.dart';
@@ -87,6 +85,8 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
                   NotificationService.instance.setNotificationProvider(
                     notificationProvider,
                   );
+                  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                  authProvider.setContext(context);
                 });
               }
               return child!;
@@ -99,8 +99,15 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
 }
 
 // Router widget that decides what to show based on auth state
-class AppRouter extends StatelessWidget {
+class AppRouter extends StatefulWidget {
   const AppRouter({super.key});
+
+  @override
+  State<AppRouter> createState() => _AppRouterState();
+}
+
+class _AppRouterState extends State<AppRouter> {
+    bool _userInitialized = false;
 
   @override
   Widget build(BuildContext context) {
@@ -117,9 +124,22 @@ class AppRouter extends StatelessWidget {
 
         // If user is not logged in, show authentication flow
         if (!authProvider.isLoggedIn) {
+                    _userInitialized = false; // Reset initialization flag
           return const SplashScreen();
         }
-
+    // If user is logged in, initialize task provider with user ID
+        if (authProvider.isLoggedIn && !_userInitialized) {
+          // Initialize TaskProvider for this user
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (authProvider.currentUser != null) {
+              final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+              await taskProvider.setUser(authProvider.currentUser!.id);
+              setState(() {
+                _userInitialized = true;
+              });
+            }
+          });
+        }
         // If user is logged in, show main app
         return const MainAppScaffold();
       },

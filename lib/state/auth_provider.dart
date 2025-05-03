@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskgenius/state/task_provider.dart';
 
 class User {
   final String id;
@@ -53,21 +55,27 @@ class User {
 }
 
 class AuthProvider extends ChangeNotifier {
-  final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
+  final firebase_auth.FirebaseAuth _firebaseAuth =
+      firebase_auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  
+
   User? _currentUser;
   bool _isLoading = false;
   String? _error;
-  
+  BuildContext? _context;
+
   // Shared preferences key
   static const String _userKey = 'user_data';
-  
+
   // Getters
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  // Store context for accessing providers
+  void setContext(BuildContext context) {
+    _context = context;
+  }
 
   // Constructor - initialize Firebase Auth state listener
   AuthProvider() {
@@ -87,6 +95,11 @@ class AuthProvider extends ChangeNotifier {
         // User is signed out
         _currentUser = null;
         await _clearUserFromPrefs();
+        //Clear TaskProvider data when user signs out
+        if (_context != null) {
+          Provider.of<TaskProvider>(_context!, listen: false).clearUser();
+        }
+
         notifyListeners();
       }
     });
@@ -123,12 +136,26 @@ class AuthProvider extends ChangeNotifier {
 
       // Save to shared prefs for offline access
       await _saveUserToPrefs(_currentUser!);
+      // Set up TaskProvider for this user
+      if (_context != null && _currentUser != null) {
+        await Provider.of<TaskProvider>(
+          _context!,
+          listen: false,
+        ).setUser(_currentUser!.id);
+      }
       notifyListeners();
     } catch (e) {
       print('Error getting user data from Firestore: $e');
       // Fallback to Firebase Auth data
       _currentUser = User.fromFirebaseUser(firebaseUser);
       await _saveUserToPrefs(_currentUser!);
+      // Set up TaskProvider for this user even in error case
+      if (_context != null && _currentUser != null) {
+        await Provider.of<TaskProvider>(
+          _context!,
+          listen: false,
+        ).setUser(_currentUser!.id);
+      }
       notifyListeners();
     }
   }
@@ -136,22 +163,22 @@ class AuthProvider extends ChangeNotifier {
   // Save user data to Firestore
   Future<void> _saveUserToFirestore(User user) async {
     try {
-          print('Attempting to save user to Firestore: ${user.id}');
+      print('Attempting to save user to Firestore: ${user.id}');
 
       final userDoc = _firestore.collection('users').doc(user.id);
-    
-    await userDoc.set({
-      'uid': user.id,  // Add this field
-      'name': user.name,
-      'email': user.email,
-      'photoUrl': user.photoUrl,
-      'createdAt': FieldValue.serverTimestamp(),
-      'lastLogin': FieldValue.serverTimestamp(),
-      'isActive': true,
-      'accountType': 'standard',
-    }, SetOptions(merge: true));
-    
-    print('Successfully saved user to Firestore');
+
+      await userDoc.set({
+        'uid': user.id, // Add this field
+        'name': user.name,
+        'email': user.email,
+        'photoUrl': user.photoUrl,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastLogin': FieldValue.serverTimestamp(),
+        'isActive': true,
+        'accountType': 'standard',
+      }, SetOptions(merge: true));
+
+      print('Successfully saved user to Firestore');
     } catch (e) {
       print('Error saving user data to Firestore: $e');
     }
@@ -166,6 +193,13 @@ class AuthProvider extends ChangeNotifier {
 
       if (userData != null && _currentUser == null) {
         _currentUser = User.fromJson(userData);
+        // Set up TaskProvider for this user
+        if (_context != null && _currentUser != null) {
+          await Provider.of<TaskProvider>(
+            _context!,
+            listen: false,
+          ).setUser(_currentUser!.id);
+        }
         notifyListeners();
       }
     } catch (e) {
@@ -374,7 +408,6 @@ class AuthProvider extends ChangeNotifier {
         // Update display name
         await userCredential.user!.updateDisplayName(name);
 
-
         // Try to save user to Firestore
         try {
           await _firestore
@@ -388,8 +421,7 @@ class AuthProvider extends ChangeNotifier {
                 'isActive': true,
                 'accountType': 'standard',
               });
-                  print('User data saved to Firestore successfully');
-
+          print('User data saved to Firestore successfully');
         } catch (firestoreError) {
           print(
             'Warning: Could not save user data to Firestore: $firestoreError',
@@ -591,6 +623,10 @@ class AuthProvider extends ChangeNotifier {
   // Logout
   Future<void> logout() async {
     try {
+      // Clear TaskProvider data before logging out
+      if (_context != null) {
+        Provider.of<TaskProvider>(_context!, listen: false).clearUser();
+      }
       await _firebaseAuth.signOut();
       _currentUser = null;
       await _clearUserFromPrefs();

@@ -8,9 +8,24 @@ import 'package:taskgenius/services/notification_service.dart';
 import 'package:taskgenius/services/productivity_Service.dart';
 
 class TaskProvider extends ChangeNotifier {
-  static const String _tasksKey = 'tasks_data';
-  static const String _categoriesKey = 'task_categories';
-  static const String _userPreferencesKey = 'user_preferences';
+  // Add user ID to make keys user-specific
+  String? _currentUserId;
+
+  // Update keys to include user ID
+  String get _tasksKey =>
+      _currentUserId != null ? 'tasks_data_$_currentUserId' : 'tasks_data';
+  String get _categoriesKey =>
+      _currentUserId != null
+          ? 'task_categories_$_currentUserId'
+          : 'task_categories';
+  String get _userPreferencesKey =>
+      _currentUserId != null
+          ? 'user_preferences_$_currentUserId'
+          : 'user_preferences';
+
+  // static const String _tasksKey = 'tasks_data';
+  // static const String _categoriesKey = 'task_categories';
+  // static const String _userPreferencesKey = 'user_preferences';
 
   List<Task> _tasks = [];
   List<String> _categories = [
@@ -33,7 +48,32 @@ class TaskProvider extends ChangeNotifier {
 
   // Constructor
   TaskProvider() {
-    _init();
+    // _init();
+  }
+  Future<void> setUser(String userId) async {
+    if (_currentUserId == userId && _isInitialized) {
+      return; // Already initialized for this user
+    }
+
+    _currentUserId = userId;
+    _isInitialized = false;
+
+    // Reset data
+    _tasks.clear();
+    _categories = ['Work', 'Study', 'Personal', 'Shopping', 'Health', 'Travel'];
+    _userPreferences = {'availableHours': 8, 'timePreference': 1};
+
+    await _init();
+  }
+
+  // Clear data when user logs out
+  void clearUser() {
+    _currentUserId = null;
+    _isInitialized = false;
+    _tasks.clear();
+    _categories = ['Work', 'Study', 'Personal', 'Shopping', 'Health', 'Travel'];
+    _userPreferences = {'availableHours': 8, 'timePreference': 1};
+    notifyListeners();
   }
 
   // Initialize and load data
@@ -50,6 +90,8 @@ class TaskProvider extends ChangeNotifier {
 
   // Load tasks from SharedPreferences
   Future<void> _loadTasks() async {
+    if (_currentUserId == null) return;
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final tasksJson = prefs.getStringList(_tasksKey) ?? [];
@@ -69,6 +111,8 @@ class TaskProvider extends ChangeNotifier {
 
   // Save tasks to SharedPreferences
   Future<void> _saveTasks() async {
+    if (_currentUserId == null) return;
+
     try {
       final prefs = await SharedPreferences.getInstance();
 
@@ -86,6 +130,8 @@ class TaskProvider extends ChangeNotifier {
 
   // Load categories from SharedPreferences
   Future<void> _loadCategories() async {
+    if (_currentUserId == null) return;
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final savedCategories = prefs.getStringList(_categoriesKey);
@@ -103,6 +149,8 @@ class TaskProvider extends ChangeNotifier {
 
   // Save categories to SharedPreferences
   Future<void> _saveCategories() async {
+    if (_currentUserId == null) return;
+
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList(_categoriesKey, _categories);
@@ -113,6 +161,8 @@ class TaskProvider extends ChangeNotifier {
 
   // Load user preferences from SharedPreferences
   Future<void> _loadUserPreferences() async {
+    if (_currentUserId == null) return;
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final preferencesJson = prefs.getString(_userPreferencesKey);
@@ -130,6 +180,8 @@ class TaskProvider extends ChangeNotifier {
 
   // Save user preferences to SharedPreferences
   Future<void> _saveUserPreferences() async {
+    if (_currentUserId == null) return;
+
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userPreferencesKey, json.encode(_userPreferences));
