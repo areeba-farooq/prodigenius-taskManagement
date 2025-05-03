@@ -16,11 +16,39 @@ class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _timeRange = 'Week';
-
+  // Add these fields for productivity data
+  List<String> _productivityInsights = [];
+  Map<String, dynamic> _productivityStats = {};
+  bool _isLoadingProductivity = true;
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadProductivityData();
+  }
+
+  // Add this method to load productivity data
+  Future<void> _loadProductivityData() async {
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    try {
+      final insights = await taskProvider.getProductivityInsights();
+      final stats = await taskProvider.getProductivityStats();
+
+      if (mounted) {
+        setState(() {
+          _productivityInsights = insights;
+          _productivityStats = stats;
+          _isLoadingProductivity = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading productivity data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingProductivity = false;
+        });
+      }
+    }
   }
 
   @override
@@ -231,10 +259,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
           ],
-       
-       
-       
-       
         ],
       ),
     );
@@ -356,7 +380,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ],
                       ),
                       const SizedBox(height: 12),
-                      ClipRounded(
+                      clipRounded(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: completionPercent / 100,
@@ -377,7 +401,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // Helper widget for ClipRRect workaround
-  Widget ClipRounded({
+  Widget clipRounded({
     required BorderRadius borderRadius,
     required Widget child,
   }) {
@@ -385,8 +409,358 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   // Productivity Tab
+  // Widget _buildProductivityTab(List<Task> tasks) {
+  //   // Get dates for time range
+  //   final DateTime now = DateTime.now();
+  //   DateTime startDate;
+
+  //   switch (_timeRange) {
+  //     case 'Week':
+  //       startDate = now.subtract(const Duration(days: 7));
+  //       break;
+  //     case 'Month':
+  //       startDate = DateTime(now.year, now.month - 1, now.day);
+  //       break;
+  //     case 'Year':
+  //       startDate = DateTime(now.year - 1, now.month, now.day);
+  //       break;
+  //     default:
+  //       startDate = now.subtract(const Duration(days: 7));
+  //   }
+
+  //   // Filter tasks within date range
+  //   final filteredTasks =
+  //       tasks
+  //           .where(
+  //             (task) =>
+  //                 task.dueDate.isAfter(startDate) ||
+  //                 task.dueDate.isAtSameMomentAs(startDate),
+  //           )
+  //           .toList();
+
+  //   // Group tasks by date
+  //   final Map<String, int> completedByDate = {};
+  //   final Map<String, int> addedByDate = {};
+
+  //   // Format pattern based on time range
+  //   String dateFormat;
+  //   if (_timeRange == 'Week') {
+  //     dateFormat = 'E'; // Abbreviated day name
+  //   } else if (_timeRange == 'Month') {
+  //     dateFormat = 'dd'; // Day of month
+  //   } else {
+  //     dateFormat = 'MMM'; // Abbreviated month name
+  //   }
+
+  //   // Initialize dates in range
+  //   for (int i = 0; i <= now.difference(startDate).inDays; i++) {
+  //     final date = startDate.add(Duration(days: i));
+  //     final dateKey = DateFormat(dateFormat).format(date);
+
+  //     completedByDate[dateKey] = 0;
+  //     addedByDate[dateKey] = 0;
+  //   }
+
+  //   // Count tasks
+  //   for (final task in filteredTasks) {
+  //     final dateKey = DateFormat(dateFormat).format(task.dueDate);
+
+  //     // Count as added
+  //     if (addedByDate.containsKey(dateKey)) {
+  //       addedByDate[dateKey] = (addedByDate[dateKey] ?? 0) + 1;
+  //     }
+
+  //     // Count as completed if completed
+  //     if (task.isCompleted && completedByDate.containsKey(dateKey)) {
+  //       completedByDate[dateKey] = (completedByDate[dateKey] ?? 0) + 1;
+  //     }
+  //   }
+
+  //   // Calculate productivity metrics
+  //   int totalCompleted = 0;
+  //   for (var task in filteredTasks) {
+  //     if (task.isCompleted) totalCompleted++;
+  //   }
+
+  //   final productivityRate =
+  //       filteredTasks.isNotEmpty
+  //           ? (totalCompleted / filteredTasks.length * 100).toStringAsFixed(1)
+  //           : '0.0';
+
+  //   return SingleChildScrollView(
+  //     padding: const EdgeInsets.all(16.0),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Card(
+  //           child: Padding(
+  //             padding: const EdgeInsets.all(16.0),
+  //             child: Row(
+  //               children: [
+  //                 Column(
+  //                   crossAxisAlignment: CrossAxisAlignment.start,
+  //                   children: [
+  //                     Text(
+  //                       'Productivity Score',
+  //                       style: Theme.of(context).textTheme.titleMedium,
+  //                     ),
+  //                     const SizedBox(height: 8),
+  //                     Text(
+  //                       '$productivityRate%',
+  //                       style: Theme.of(
+  //                         context,
+  //                       ).textTheme.headlineMedium?.copyWith(
+  //                         fontWeight: FontWeight.bold,
+  //                         color: _getProductivityColor(
+  //                           double.parse(productivityRate),
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   ],
+  //                 ),
+  //                 const Spacer(),
+  //                 Container(
+  //                   padding: const EdgeInsets.all(12),
+  //                   decoration: BoxDecoration(
+  //                     color: _getProductivityColor(
+  //                       double.parse(productivityRate),
+  //                     ).withOpacity(0.2),
+  //                     shape: BoxShape.circle,
+  //                   ),
+  //                   child: Icon(
+  //                     _getProductivityIcon(double.parse(productivityRate)),
+  //                     color: _getProductivityColor(
+  //                       double.parse(productivityRate),
+  //                     ),
+  //                     size: 32,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+
+  //         const SizedBox(height: 24),
+  //         Text(
+  //           'Productivity Over Time',
+  //           style: Theme.of(context).textTheme.titleLarge,
+  //         ),
+  //         const SizedBox(height: 16),
+  //         SizedBox(
+  //           height: 250,
+  //           child: _buildProductivityLineChart(completedByDate, addedByDate),
+  //         ),
+
+  //         const SizedBox(height: 24),
+  //         Text('Task Activity', style: Theme.of(context).textTheme.titleLarge),
+  //         const SizedBox(height: 16),
+  //         _buildActivitySummary(filteredTasks),
+  //       ],
+  //     ),
+  //   );
+  // }
+  // Modified Productivity Tab with AI insights
   Widget _buildProductivityTab(List<Task> tasks) {
-    // Get dates for time range
+    if (_isLoadingProductivity) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // Get productivity data from loaded stats
+    final completionRate = (_productivityStats['completionRate'] ?? 0.0) * 100;
+    final mostProductiveDay =
+        _productivityStats['mostProductiveDay'] ?? 'Unknown';
+    final mostProductiveTime =
+        _productivityStats['mostProductiveTime'] ?? 'Unknown';
+    final streak = _productivityStats['streak'] ?? 0;
+    final categoryStats =
+        _productivityStats['categoryStats'] as Map<String, int>? ?? {};
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Productivity Score Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Weekly Productivity Score',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${completionRate.toStringAsFixed(1)}%',
+                            style: Theme.of(
+                              context,
+                            ).textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: _getProductivityColor(completionRate),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _getProductivityColor(
+                            completionRate,
+                          ).withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _getProductivityIcon(completionRate),
+                          color: _getProductivityColor(completionRate),
+                          size: 32,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (streak > 0) ...[
+                    const Divider(height: 32),
+                    Row(
+                      children: [
+                        Icon(Icons.local_fire_department, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$streak Day Streak!',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // AI Insights
+          Text(
+            'AI Productivity Insights',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+
+          // Display insights as cards
+          ..._productivityInsights.map(
+            (insight) => Card(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListTile(
+                leading: Icon(
+                  _getInsightIcon(insight),
+                  color: Theme.of(context).primaryColor,
+                ),
+                title: Text(insight),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Productivity Patterns
+          Text(
+            'Your Productivity Patterns',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+
+          // Most Productive Day
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.calendar_today, color: Colors.blue),
+              title: Text('Most Productive Day'),
+              subtitle: Text(mostProductiveDay),
+              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Most Productive Time
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.access_time, color: Colors.orange),
+              title: Text('Most Productive Time'),
+              subtitle: Text(mostProductiveTime),
+              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Category Productivity
+          if (categoryStats.isNotEmpty) ...[
+            Text(
+              'Tasks Completed by Category',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(height: 200, child: _buildCategoryPieChart(categoryStats)),
+          ],
+
+          const SizedBox(height: 24),
+
+          // Productivity Over Time (your existing chart)
+          Text(
+            'Productivity Over Time',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 16),
+
+          // [The rest of your existing productivity chart code goes here]
+          _buildProductivityTimelineSection(tasks),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryPieChart(Map<String, int> categoryStats) {
+    final total = categoryStats.values.fold<int>(
+      0,
+      (sum, count) => sum + count,
+    );
+    if (total == 0) return const Center(child: Text('No data available'));
+
+    return PieChart(
+      PieChartData(
+        sections:
+            categoryStats.entries.map((entry) {
+              final percentage = (entry.value / total * 100);
+              return PieChartSectionData(
+                value: entry.value.toDouble(),
+                title: '${percentage.toStringAsFixed(1)}%',
+                color: _getCategoryColor(entry.key),
+                radius: 80,
+                titleStyle: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              );
+            }).toList(),
+        sectionsSpace: 2,
+        centerSpaceRadius: 40,
+      ),
+    );
+  }
+
+  // Helper method for building the existing productivity timeline
+  Widget _buildProductivityTimelineSection(List<Task> tasks) {
     final DateTime now = DateTime.now();
     DateTime startDate;
 
@@ -404,7 +778,6 @@ class _DashboardScreenState extends State<DashboardScreen>
         startDate = now.subtract(const Duration(days: 7));
     }
 
-    // Filter tasks within date range
     final filteredTasks =
         tasks
             .where(
@@ -414,126 +787,63 @@ class _DashboardScreenState extends State<DashboardScreen>
             )
             .toList();
 
-    // Group tasks by date
     final Map<String, int> completedByDate = {};
     final Map<String, int> addedByDate = {};
 
-    // Format pattern based on time range
     String dateFormat;
     if (_timeRange == 'Week') {
-      dateFormat = 'E'; // Abbreviated day name
+      dateFormat = 'E';
     } else if (_timeRange == 'Month') {
-      dateFormat = 'dd'; // Day of month
+      dateFormat = 'dd';
     } else {
-      dateFormat = 'MMM'; // Abbreviated month name
+      dateFormat = 'MMM';
     }
 
-    // Initialize dates in range
     for (int i = 0; i <= now.difference(startDate).inDays; i++) {
       final date = startDate.add(Duration(days: i));
       final dateKey = DateFormat(dateFormat).format(date);
-
       completedByDate[dateKey] = 0;
       addedByDate[dateKey] = 0;
     }
 
-    // Count tasks
     for (final task in filteredTasks) {
       final dateKey = DateFormat(dateFormat).format(task.dueDate);
-
-      // Count as added
       if (addedByDate.containsKey(dateKey)) {
         addedByDate[dateKey] = (addedByDate[dateKey] ?? 0) + 1;
       }
-
-      // Count as completed if completed
       if (task.isCompleted && completedByDate.containsKey(dateKey)) {
         completedByDate[dateKey] = (completedByDate[dateKey] ?? 0) + 1;
       }
     }
 
-    // Calculate productivity metrics
-    int totalCompleted = 0;
-    for (var task in filteredTasks) {
-      if (task.isCompleted) totalCompleted++;
-    }
-
-    final productivityRate =
-        filteredTasks.isNotEmpty
-            ? (totalCompleted / filteredTasks.length * 100).toStringAsFixed(1)
-            : '0.0';
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Productivity Score',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$productivityRate%',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: _getProductivityColor(
-                            double.parse(productivityRate),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _getProductivityColor(
-                        double.parse(productivityRate),
-                      ).withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      _getProductivityIcon(double.parse(productivityRate)),
-                      color: _getProductivityColor(
-                        double.parse(productivityRate),
-                      ),
-                      size: 32,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-          Text(
-            'Productivity Over Time',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 250,
-            child: _buildProductivityLineChart(completedByDate, addedByDate),
-          ),
-
-          const SizedBox(height: 24),
-          Text('Task Activity', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 16),
-          _buildActivitySummary(filteredTasks),
-        ],
-      ),
+    return Column(
+      children: [
+        SizedBox(
+          height: 250,
+          child: _buildProductivityLineChart(completedByDate, addedByDate),
+        ),
+        const SizedBox(height: 24),
+        Text('Task Activity', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 16),
+        _buildActivitySummary(filteredTasks),
+      ],
     );
+  }
+
+  // New helper methods for productivity insights
+  IconData _getInsightIcon(String insight) {
+    if (insight.contains('productive on')) {
+      return Icons.calendar_today;
+    } else if (insight.contains('tasks in the')) {
+      return Icons.access_time;
+    } else if (insight.contains('completion rate')) {
+      return Icons.show_chart;
+    } else if (insight.contains('streak')) {
+      return Icons.local_fire_department;
+    } else if (insight.contains('complete the most')) {
+      return Icons.category;
+    }
+    return Icons.lightbulb_outline;
   }
 
   // Helper method to build metric cards
@@ -894,4 +1204,3 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 }
-

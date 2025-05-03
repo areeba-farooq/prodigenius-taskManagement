@@ -136,13 +136,22 @@ class AuthProvider extends ChangeNotifier {
   // Save user data to Firestore
   Future<void> _saveUserToFirestore(User user) async {
     try {
-      await _firestore.collection('users').doc(user.id).set({
-        'name': user.name,
-        'email': user.email,
-        'photoUrl': user.photoUrl,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+          print('Attempting to save user to Firestore: ${user.id}');
+
+      final userDoc = _firestore.collection('users').doc(user.id);
+    
+    await userDoc.set({
+      'uid': user.id,  // Add this field
+      'name': user.name,
+      'email': user.email,
+      'photoUrl': user.photoUrl,
+      'createdAt': FieldValue.serverTimestamp(),
+      'lastLogin': FieldValue.serverTimestamp(),
+      'isActive': true,
+      'accountType': 'standard',
+    }, SetOptions(merge: true));
+    
+    print('Successfully saved user to Firestore');
     } catch (e) {
       print('Error saving user data to Firestore: $e');
     }
@@ -365,6 +374,7 @@ class AuthProvider extends ChangeNotifier {
         // Update display name
         await userCredential.user!.updateDisplayName(name);
 
+
         // Try to save user to Firestore
         try {
           await _firestore
@@ -378,6 +388,8 @@ class AuthProvider extends ChangeNotifier {
                 'isActive': true,
                 'accountType': 'standard',
               });
+                  print('User data saved to Firestore successfully');
+
         } catch (firestoreError) {
           print(
             'Warning: Could not save user data to Firestore: $firestoreError',
