@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -12,10 +11,9 @@ import 'package:taskgenius/services/productivity_Service.dart';
 class TaskProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   StreamSubscription<List<Task>>? _tasksSubscription;
-  
+
   String? _currentUserId;
 
-  
   String get _tasksKey =>
       _currentUserId != null ? 'tasks_data_$_currentUserId' : 'tasks_data';
   String get _categoriesKey =>
@@ -37,26 +35,22 @@ class TaskProvider extends ChangeNotifier {
     'Travel',
   ];
 
-  
   Map<String, dynamic> _userPreferences = {
-    'availableHours': 8, 
-    'timePreference':
-        1, 
+    'availableHours': 8,
+    'timePreference': 1,
   };
 
   bool _isInitialized = false;
 
-
   Future<void> setUser(String userId) async {
     if (_currentUserId == userId && _isInitialized) {
-      return; 
+      return;
     }
 
     _currentUserId = userId;
     _isInitialized = false;
     await _tasksSubscription?.cancel();
 
-    
     _tasks.clear();
     _categories = ['Work', 'Study', 'Personal', 'Shopping', 'Health', 'Travel'];
     _userPreferences = {'availableHours': 8, 'timePreference': 1};
@@ -92,9 +86,7 @@ class TaskProvider extends ChangeNotifier {
         _tasks = tasks;
         notifyListeners();
       });
-      
-      
-      
+
       _isInitialized = true;
       notifyListeners();
       print("TaskProvider initialized with ${_tasks.length} tasks");
@@ -151,12 +143,10 @@ class TaskProvider extends ChangeNotifier {
       if (savedCategories != null && savedCategories.isNotEmpty) {
         _categories = savedCategories;
       } else {
-        
         await _saveCategories();
       }
     } catch (e) {
       print("Error loading categories: $e");
-      
     }
   }
 
@@ -182,12 +172,10 @@ class TaskProvider extends ChangeNotifier {
       if (preferencesJson != null) {
         _userPreferences = json.decode(preferencesJson) as Map<String, dynamic>;
       } else {
-        
         await _saveUserPreferences();
       }
     } catch (e) {
       print("Error loading user preferences: $e");
-      
     }
   }
 
@@ -203,10 +191,37 @@ class TaskProvider extends ChangeNotifier {
     }
   }
 
-  
+  // Get completed tasks
+  List<Task> get completedTasks {
+    return _tasks.where((task) => task.isCompleted).toList();
+  }
+
+  // Get completed tasks sorted by completion time
+  List<Task> get completedTasksByDate {
+    final completed = completedTasks;
+    return completed;
+  }
+
+  // Get completed tasks by category
+  List<Task> getCompletedTasksByCategory(String category) {
+    if (category == 'All') {
+      return completedTasks;
+    }
+    return completedTasks.where((task) => task.category == category).toList();
+  }
+
+  // Search completed tasks
+  List<Task> searchCompletedTasks(String query) {
+    if (query.isEmpty) {
+      return completedTasks;
+    }
+    return completedTasks
+        .where((task) => task.title.toLowerCase().contains(query.toLowerCase()))
+        .toList();
+  }
+
   bool get isInitialized => _isInitialized;
 
-  
   List<Task> get tasks => _tasks;
   List<String> get categories => _categories;
   Map<String, dynamic> get userPreferences => _userPreferences;
@@ -272,7 +287,6 @@ class TaskProvider extends ChangeNotifier {
     int? availableHours,
     int? timePreference,
   }) async {
-    
     if (_currentUserId == null) return;
 
     if (availableHours != null) {
@@ -283,7 +297,6 @@ class TaskProvider extends ChangeNotifier {
       _userPreferences['timePreference'] = timePreference;
     }
 
-    
     await _firestoreService.saveUserPreferences(
       _currentUserId!,
       _userPreferences,
@@ -292,13 +305,10 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  
   Future<void> addTask(Task task) async {
     try {
       if (_currentUserId == null) return;
-      
 
-      
       print("Adding task: ${task.title} with ID: ${task.id}");
 
       // Schedule the task using AI
@@ -322,18 +332,12 @@ class TaskProvider extends ChangeNotifier {
         ),
       );
 
-      
       _tasks.add(scheduledTask);
 
-      
-      
-      
       await _firestoreService.saveTask(_currentUserId!, scheduledTask);
 
-      
       _scheduleTaskNotifications(scheduledTask);
 
-      
       print("Task count after adding: ${_tasks.length}");
 
       notifyListeners();
@@ -358,21 +362,18 @@ class TaskProvider extends ChangeNotifier {
     );
   }
 
-  
   Future<void> addCategory(String category) async {
-    
     if (_currentUserId == null) return;
 
     if (!_categories.contains(category)) {
       _categories.add(category);
-      
+
       await _firestoreService.saveCategories(_currentUserId!, _categories);
 
       notifyListeners();
     }
   }
 
-  
   Future<void> toggleTaskCompletion(String taskId) async {
     try {
       await _ensureInitialized();
@@ -380,6 +381,7 @@ class TaskProvider extends ChangeNotifier {
       final index = _tasks.indexWhere((task) => task.id == taskId);
       if (index != -1) {
         final oldTask = _tasks[index];
+        final isNowCompleted = !oldTask.isCompleted;
 
         // Create a new task with the updated completion status
         final updatedTask = Task(
@@ -394,21 +396,23 @@ class TaskProvider extends ChangeNotifier {
           scheduledDay: oldTask.scheduledDay,
           scheduledTimeSlot: oldTask.scheduledTimeSlot,
           scheduledTimeDescription: oldTask.scheduledTimeDescription,
+          completedAt: isNowCompleted ? DateTime.now() : null,
         );
 
-        
         _tasks[index] = updatedTask;
 
-        
-        await _saveTasks();
+        if (_currentUserId != null) {
+          await _firestoreService.saveTask(_currentUserId!, updatedTask);
+        }
 
+     
         // If task is now completed, record the completion
-        if (updatedTask.isCompleted && !oldTask.isCompleted) {
+        if (isNowCompleted) {
           await ProductivityService.recordTaskCompletion(updatedTask);
           NotificationService.instance.cancelTaskNotifications(taskId);
         }
         // If task is now uncompleted, schedule notifications
-        else if (!updatedTask.isCompleted && oldTask.isCompleted) {
+        else {
           _scheduleTaskNotifications(updatedTask);
         }
 
@@ -447,14 +451,20 @@ class TaskProvider extends ChangeNotifier {
   // Update an existing task
   Future<void> updateTask(Task updatedTask) async {
     try {
-      
       if (_currentUserId == null) return;
 
       final index = _tasks.indexWhere((task) => task.id == updatedTask.id);
       if (index != -1) {
-        
         final oldTask = _tasks[index];
-
+        // Handle completion status changes
+        DateTime? completedAt = updatedTask.completedAt;
+        if (!oldTask.isCompleted && updatedTask.isCompleted) {
+          // Task is being marked as completed now
+          completedAt = DateTime.now();
+        } else if (oldTask.isCompleted && !updatedTask.isCompleted) {
+          // Task is being unmarked as completed
+          completedAt = null;
+        }
         // If priority, duration, due date changed, recalculate schedule
         Task taskToUpdate = updatedTask;
 
@@ -480,23 +490,44 @@ class TaskProvider extends ChangeNotifier {
               schedule['day'],
               schedule['timeSlotName'],
             ),
+            completedAt: completedAt, 
           );
+        } else {
+          if (completedAt != updatedTask.completedAt) {
+            taskToUpdate = Task(
+              id: updatedTask.id,
+              title: updatedTask.title,
+              category: updatedTask.category,
+              dueDate: updatedTask.dueDate,
+              urgencyLevel: updatedTask.urgencyLevel,
+              priority: updatedTask.priority,
+              isCompleted: updatedTask.isCompleted,
+              estimatedDuration: updatedTask.estimatedDuration,
+              scheduledDay: updatedTask.scheduledDay,
+              scheduledTimeSlot: updatedTask.scheduledTimeSlot,
+              scheduledTimeDescription: updatedTask.scheduledTimeDescription,
+              completedAt: completedAt,
+            );
+          }
         }
 
-        
         _tasks[index] = taskToUpdate;
 
-        
-        
         // Update in Firestore
         await _firestoreService.saveTask(_currentUserId!, taskToUpdate);
 
-        // Cancel existing notifications if the task was completed
+      
+        // Handle notifications based on completion status
         if (!oldTask.isCompleted && taskToUpdate.isCompleted) {
+          // Task was just completed
+          await ProductivityService.recordTaskCompletion(taskToUpdate);
           NotificationService.instance.cancelTaskNotifications(taskToUpdate.id);
-        }
-        // Reschedule notifications if the task details changed
-        else if (!taskToUpdate.isCompleted) {
+        } else if (oldTask.isCompleted && !taskToUpdate.isCompleted) {
+          // Task was uncompleted
+          NotificationService.instance.cancelTaskNotifications(taskToUpdate.id);
+          _scheduleTaskNotifications(taskToUpdate);
+        } else if (!taskToUpdate.isCompleted) {
+          // Task details changed but still not completed - reschedule notifications
           NotificationService.instance.cancelTaskNotifications(taskToUpdate.id);
           _scheduleTaskNotifications(taskToUpdate);
         }
@@ -511,18 +542,11 @@ class TaskProvider extends ChangeNotifier {
   // Delete a task
   Future<void> deleteTask(String taskId) async {
     try {
-      
       if (_currentUserId == null) return;
 
       // Cancel notifications before deleting
       NotificationService.instance.cancelTaskNotifications(taskId);
       await _firestoreService.deleteTask(_currentUserId!, taskId);
-
-      
-      
-
-      
-      
 
       notifyListeners();
     } catch (e) {
@@ -578,7 +602,6 @@ class TaskProvider extends ChangeNotifier {
 
   // Method to schedule task notifications
   void _scheduleTaskNotifications(Task task) {
-    
     if (task.isCompleted) return;
 
     // Schedule reminder notification (30 minutes before deadline for high priority)
@@ -655,7 +678,6 @@ class TaskProvider extends ChangeNotifier {
       await _init();
     }
   }
-
 
   // Remember to dispose of the subscription
   @override

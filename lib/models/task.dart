@@ -13,6 +13,7 @@ class Task {
   final int? scheduledDay;
   final int? scheduledTimeSlot;
   final String? scheduledTimeDescription;
+  final DateTime? completedAt; 
 
   Task({
     String? id,
@@ -26,17 +27,15 @@ class Task {
     this.scheduledDay,
     this.scheduledTimeSlot,
     this.scheduledTimeDescription,
+    this.completedAt, 
   }) : id = id ?? const Uuid().v4();
 
-  
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
       'category': category,
-      
-          'dueDate': Timestamp.fromDate(dueDate), 
-
+      'dueDate': dueDate.millisecondsSinceEpoch,
       'urgencyLevel': urgencyLevel,
       'priority': priority,
       'isCompleted': isCompleted,
@@ -44,31 +43,83 @@ class Task {
       'scheduledDay': scheduledDay,
       'scheduledTimeSlot': scheduledTimeSlot,
       'scheduledTimeDescription': scheduledTimeDescription,
-          'createdAt': FieldValue.serverTimestamp(), 
-
+      'completedAt': completedAt?.millisecondsSinceEpoch,
     };
   }
 
-  
   factory Task.fromMap(Map<String, dynamic> map) {
-    return Task(
-      id: map['id'],
-      title: map['title'],
-      category: map['category'],
-      
-          dueDate: (map['dueDate'] as Timestamp).toDate(), 
+    // Handle different date formats
+    DateTime parseDueDate() {
+      final dueDateField = map['dueDate'];
 
-      urgencyLevel: map['urgencyLevel'],
-      priority: map['priority'],
-      isCompleted: map['isCompleted'],
-      estimatedDuration: Duration(minutes: map['estimatedDurationMinutes']),
-      scheduledDay: map['scheduledDay'],
-      scheduledTimeSlot: map['scheduledTimeSlot'],
+      if (dueDateField is DateTime) {
+        return dueDateField;
+      } else if (dueDateField is Timestamp) {
+        return dueDateField.toDate();
+      } else if (dueDateField is int) {
+        return DateTime.fromMillisecondsSinceEpoch(dueDateField);
+      } else {
+        print('Unknown date format for dueDate: $dueDateField');
+        return DateTime.now();
+      }
+    }
+
+    // Parse completedAt field which could be null
+    DateTime? parseCompletedAt() {
+      final completedAtField = map['completedAt'];
+
+      if (completedAtField == null) {
+        return null;
+      } else if (completedAtField is DateTime) {
+        return completedAtField;
+      } else if (completedAtField is Timestamp) {
+        return completedAtField.toDate();
+      } else if (completedAtField is int) {
+        return DateTime.fromMillisecondsSinceEpoch(completedAtField);
+      } else {
+        print('Unknown date format for completedAt: $completedAtField');
+        return null;
+      }
+    }
+
+    // Handle different number formats
+    int parseIntField(dynamic value, int defaultValue) {
+      if (value is int) {
+        return value;
+      } else if (value is double) {
+        return value.toInt();
+      } else if (value is String && int.tryParse(value) != null) {
+        return int.parse(value);
+      } else {
+        print('Unknown integer format: $value, using default: $defaultValue');
+        return defaultValue;
+      }
+    }
+
+    return Task(
+      id: map['id'] ?? const Uuid().v4(),
+      title: map['title'] ?? 'Untitled Task',
+      category: map['category'] ?? 'Other',
+      dueDate: parseDueDate(),
+      urgencyLevel: parseIntField(map['urgencyLevel'], 3),
+      priority: map['priority'] ?? 'Medium',
+      isCompleted: map['isCompleted'] ?? false,
+      estimatedDuration: Duration(
+        minutes: parseIntField(map['estimatedDurationMinutes'], 30),
+      ),
+      scheduledDay:
+          map['scheduledDay'] != null
+              ? parseIntField(map['scheduledDay'], 0)
+              : null,
+      scheduledTimeSlot:
+          map['scheduledTimeSlot'] != null
+              ? parseIntField(map['scheduledTimeSlot'], 0)
+              : null,
       scheduledTimeDescription: map['scheduledTimeDescription'],
+      completedAt: parseCompletedAt(),
     );
   }
 
-  
   Task copyWith({
     String? title,
     String? category,
@@ -80,6 +131,7 @@ class Task {
     int? scheduledDay,
     int? scheduledTimeSlot,
     String? scheduledTimeDescription,
+    DateTime? completedAt,
   }) {
     return Task(
       id: id,
@@ -94,6 +146,7 @@ class Task {
       scheduledTimeSlot: scheduledTimeSlot ?? this.scheduledTimeSlot,
       scheduledTimeDescription:
           scheduledTimeDescription ?? this.scheduledTimeDescription,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 }

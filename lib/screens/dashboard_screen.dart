@@ -800,7 +800,6 @@ class _DashboardScreenState extends State<DashboardScreen>
           final category = categoryCount.keys.elementAt(index);
           final total = categoryCount[category] ?? 0;
           final completed = completedCount[category] ?? 0;
-          final pending = total - completed;
 
           return BarChartGroupData(
             x: index,

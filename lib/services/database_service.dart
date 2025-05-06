@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/models/notification.dart';
@@ -8,10 +7,7 @@ class FirestoreService {
 
   // Tasks collection reference for a specific user
   CollectionReference _userTasksRef(String userId) {
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('tasks');
+    return _firestore.collection('users').doc(userId).collection('tasks');
   }
 
   // Notifications collection reference for a specific user
@@ -43,21 +39,59 @@ class FirestoreService {
   // Add or update a task
   Future<void> saveTask(String userId, Task task) async {
     try {
+      final taskData = task.toMap();
+      // For Firestore, convert DateTime objects to Timestamp objects
+      taskData['dueDate'] = Timestamp.fromDate(task.dueDate);
+      // Handle the completedAt field - convert to Timestamp when not null
+      if (task.completedAt != null) {
+        taskData['completedAt'] = Timestamp.fromDate(task.completedAt!);
+      } else {
+        taskData['completedAt'] = null;
+      }
+      // For Firestore, convert DateTime to Timestamp
       await _userTasksRef(userId).doc(task.id).set(task.toMap());
+      if (task.isCompleted && task.completedAt != null) {
+        print('Task completed at: ${task.completedAt}');
+      }
     } catch (e) {
       print('Error saving task: $e');
-      throw e;
+      rethrow;
     }
   }
 
   // Get all tasks for a user
+
   Stream<List<Task>> getTasks(String userId) {
-    return _userTasksRef(userId)
-        .orderBy('dueDate')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Task.fromMap(doc.data() as Map<String, dynamic>))
-            .toList());
+    return _userTasksRef(userId).orderBy('dueDate').snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        try {
+          // Create a data map from the document
+          final data = doc.data() as Map<String, dynamic>;
+
+          // Ensure the document has an ID
+          if (!data.containsKey('id') || data['id'] == null) {
+            data['id'] = doc.id;
+          }
+
+          // Create a task from the map
+          return Task.fromMap(data);
+        } catch (e) {
+          print('Error parsing task ${doc.id}: $e');
+          print('Task data that caused error: ${doc.data()}');
+
+          return Task(
+            id: doc.id,
+            title: 'Error Loading Task',
+            category: 'Other',
+            dueDate: DateTime.now(),
+            urgencyLevel: 3,
+            priority: 'Medium',
+            isCompleted: false,
+            estimatedDuration: const Duration(minutes: 30),
+          );
+        }
+      }).toList();
+    });
   }
 
   // Delete a task
@@ -66,17 +100,22 @@ class FirestoreService {
       await _userTasksRef(userId).doc(taskId).delete();
     } catch (e) {
       print('Error deleting task: $e');
-      throw e;
+      rethrow;
     }
   }
 
   // Save notification
-  Future<void> saveNotification(String userId, AppNotification notification) async {
+  Future<void> saveNotification(
+    String userId,
+    AppNotification notification,
+  ) async {
     try {
-      await _userNotificationsRef(userId).doc(notification.id).set(notification.toMap());
+      await _userNotificationsRef(
+        userId,
+      ).doc(notification.id).set(notification.toMap());
     } catch (e) {
       print('Error saving notification: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -86,9 +125,16 @@ class FirestoreService {
         .orderBy('timestamp', descending: true)
         .limit(50)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AppNotification.fromMap(doc.data() as Map<String, dynamic>))
-            .toList());
+        .map(
+          (snapshot) =>
+              snapshot.docs
+                  .map(
+                    (doc) => AppNotification.fromMap(
+                      doc.data() as Map<String, dynamic>,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   // Delete notification
@@ -97,17 +143,20 @@ class FirestoreService {
       await _userNotificationsRef(userId).doc(notificationId).delete();
     } catch (e) {
       print('Error deleting notification: $e');
-      throw e;
+      rethrow;
     }
   }
 
   // Save user preferences
-  Future<void> saveUserPreferences(String userId, Map<String, dynamic> preferences) async {
+  Future<void> saveUserPreferences(
+    String userId,
+    Map<String, dynamic> preferences,
+  ) async {
     try {
       await _userPreferencesRef(userId).set(preferences);
     } catch (e) {
       print('Error saving preferences: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -118,16 +167,10 @@ class FirestoreService {
       if (doc.exists) {
         return doc.data() as Map<String, dynamic>;
       }
-      return {
-        'availableHours': 8,
-        'timePreference': 1,
-      };
+      return {'availableHours': 8, 'timePreference': 1};
     } catch (e) {
       print('Error getting preferences: $e');
-      return {
-        'availableHours': 8,
-        'timePreference': 1,
-      };
+      return {'availableHours': 8, 'timePreference': 1};
     }
   }
 
@@ -137,7 +180,7 @@ class FirestoreService {
       await _userCategoriesRef(userId).set({'categories': categories});
     } catch (e) {
       print('Error saving categories: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -157,12 +200,17 @@ class FirestoreService {
   }
 
   // Mark notification as read
-  Future<void> markNotificationAsRead(String userId, String notificationId) async {
+  Future<void> markNotificationAsRead(
+    String userId,
+    String notificationId,
+  ) async {
     try {
-      await _userNotificationsRef(userId).doc(notificationId).update({'isRead': true});
+      await _userNotificationsRef(
+        userId,
+      ).doc(notificationId).update({'isRead': true});
     } catch (e) {
       print('Error marking notification as read: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -171,15 +219,15 @@ class FirestoreService {
     try {
       final snapshot = await _userNotificationsRef(userId).get();
       final batch = _firestore.batch();
-      
+
       for (var doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
-      
+
       await batch.commit();
     } catch (e) {
       print('Error clearing notifications: $e');
-      throw e;
+      rethrow;
     }
   }
 }

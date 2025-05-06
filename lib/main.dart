@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:taskgenius/firebase_options.dart';
 import 'package:taskgenius/screens/add_task_screen.dart';
-import 'package:taskgenius/screens/dashboard_screen.dart';
+import 'package:taskgenius/screens/completed_task_screen.dart';
 import 'package:taskgenius/screens/home_screen.dart';
 import 'package:taskgenius/screens/account_screen.dart';
 import 'package:taskgenius/screens/splash_screen.dart';
@@ -13,7 +13,6 @@ import 'package:taskgenius/state/auth_provider.dart';
 import 'package:taskgenius/state/theme_provider.dart';
 import 'package:taskgenius/utils/theme_config.dart';
 import 'package:taskgenius/services/notification_service.dart';
-
 
 Future<void> initializeFirebase() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -61,9 +60,8 @@ class _TaskManagerAppState extends State<TaskManagerApp> {
               '/home': (context) => const MainAppScaffold(),
             },
             initialRoute: '/',
-            
+
             builder: (context, child) {
-              
               if (!_providerConnected) {
                 _providerConnected = true;
 
@@ -110,7 +108,6 @@ class _AppRouterState extends State<AppRouter> {
       builder: (context, authProvider, child) {
         print('Auth state changed. isLoggedIn: ${authProvider.isLoggedIn}');
 
-        
         if (authProvider.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -119,7 +116,7 @@ class _AppRouterState extends State<AppRouter> {
 
         // If user is not logged in, show authentication flow
         if (!authProvider.isLoggedIn) {
-          _userInitialized = false; 
+          _userInitialized = false;
           return const SplashScreen();
         }
         // If user is logged in, initialize task provider with user ID
@@ -174,12 +171,11 @@ class _MainAppScaffoldState extends State<MainAppScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    
     final List<Widget> screens = [
       const HomeScreen(),
       const TaskInputScreen(),
       const AccountScreen(),
-      const DashboardScreen(),
+      const CompletedTasksScreen(),
     ];
 
     return Scaffold(
@@ -206,9 +202,10 @@ class _MainAppScaffoldState extends State<MainAppScaffold> {
             label: 'Add Task',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
+
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: Icon(Icons.task_alt),
+            label: 'Completed',
           ),
         ],
       ),

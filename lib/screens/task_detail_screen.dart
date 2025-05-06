@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
@@ -24,7 +22,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   late String _predictedPriority;
   late bool _isCompleted;
   late Duration _estimatedDuration;
- 
+
   late int? _scheduledDay;
   late int? _scheduledTimeSlot;
   late String? _scheduledTimeDescription;
@@ -52,7 +50,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     try {
       await PriorityPredictor.initModel();
       await DurationEstimator.initModel();
-            await TaskScheduler.initModels();
+      await TaskScheduler.initModels();
 
       _updatePredictions();
     } catch (e) {
@@ -74,19 +72,19 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         _urgencyLevel,
         _selectedDate,
       );
-         // Update schedule suggestion
+      // Update schedule suggestion
       _updateScheduleSuggestion();
     });
   }
 
-void _updateScheduleSuggestion() {
+  void _updateScheduleSuggestion() {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     final userPreferences = taskProvider.userPreferences;
-    
+
     // Get user preferences for scheduling
     final availableHours = userPreferences['availableHours'] as int;
     final timePreference = userPreferences['timePreference'] as int;
-    
+
     // Get schedule suggestion
     _scheduleSuggestion = TaskScheduler.suggestSchedule(
       priority: _predictedPriority,
@@ -96,6 +94,7 @@ void _updateScheduleSuggestion() {
       dueDate: _selectedDate,
     );
   }
+
   @override
   void dispose() {
     _titleController.dispose();
@@ -147,10 +146,8 @@ void _updateScheduleSuggestion() {
                           onPressed: () {
                             // Delete task and navigate back
                             taskProvider.deleteTask(widget.task.id);
-                            Navigator.pop(context); 
-                            Navigator.pop(
-                              context,
-                            ); 
+                            Navigator.pop(context);
+                            Navigator.pop(context);
                           },
                           child: const Text(
                             'Delete',
@@ -365,8 +362,7 @@ void _updateScheduleSuggestion() {
                   ),
                 ),
 
-
-  // Current Schedule Card
+                // Current Schedule Card
                 if (_scheduledTimeDescription != null)
                   Card(
                     elevation: 3,
@@ -405,13 +401,13 @@ void _updateScheduleSuggestion() {
                       ),
                     ),
                   ),
-                
+
                 const SizedBox(height: 16),
-                
-                // AI Suggested Schedule Card 
-                if (_scheduleSuggestion != null && 
-                    (_scheduledDay != _scheduleSuggestion!['day'] || 
-                     _scheduledTimeSlot != _scheduleSuggestion!['timeSlot']))
+
+                // AI Suggested Schedule Card
+                if (_scheduleSuggestion != null &&
+                    (_scheduledDay != _scheduleSuggestion!['day'] ||
+                        _scheduledTimeSlot != _scheduleSuggestion!['timeSlot']))
                   Card(
                     elevation: 3,
                     color: Colors.blue.shade50,
@@ -453,11 +449,13 @@ void _updateScheduleSuggestion() {
                             onPressed: () {
                               setState(() {
                                 _scheduledDay = _scheduleSuggestion!['day'];
-                                _scheduledTimeSlot = _scheduleSuggestion!['timeSlot'];
-                                _scheduledTimeDescription = TaskScheduler.getScheduleDescription(
-                                  _scheduleSuggestion!['day'],
-                                  _scheduleSuggestion!['timeSlotName'],
-                                );
+                                _scheduledTimeSlot =
+                                    _scheduleSuggestion!['timeSlot'];
+                                _scheduledTimeDescription =
+                                    TaskScheduler.getScheduleDescription(
+                                      _scheduleSuggestion!['day'],
+                                      _scheduleSuggestion!['timeSlotName'],
+                                    );
                               });
                             },
                             icon: const Icon(Icons.update),
@@ -467,37 +465,9 @@ void _updateScheduleSuggestion() {
                       ),
                     ),
                   ),
-                
+
                 const SizedBox(height: 16),
-                
-                // Reschedule now button
-                if (!_isCompleted)
-                  OutlinedButton.icon(
-                    onPressed: () {
-                      _updateScheduleSuggestion();
-                      setState(() {
-                        _scheduledDay = _scheduleSuggestion!['day'];
-                        _scheduledTimeSlot = _scheduleSuggestion!['timeSlot'];
-                        _scheduledTimeDescription = TaskScheduler.getScheduleDescription(
-                          _scheduleSuggestion!['day'],
-                          _scheduleSuggestion!['timeSlotName'],
-                        );
-                      });
-                      
-                      // Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Task rescheduled!'),
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.schedule),
-                    label: const Text('Reschedule Now'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(40),
-                    ),
-                  ),
+
 
                 const SizedBox(height: 24),
 
@@ -533,7 +503,6 @@ void _updateScheduleSuggestion() {
                           ),
                         );
 
-                        
                         Navigator.pop(context);
                       }
                     },

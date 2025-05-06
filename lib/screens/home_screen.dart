@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
+import 'package:taskgenius/screens/dashboard_screen.dart';
 import 'package:taskgenius/screens/notification_screen.dart';
 import 'package:taskgenius/screens/task_detail_screen.dart';
 import 'package:taskgenius/screens/task_schedule_screen.dart';
@@ -20,7 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
   String _sortBy = 'Due Date';
 
-  
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -44,6 +44,11 @@ class _HomeScreenState extends State<HomeScreen> {
   // Filter tasks based on selected category and search query
   List<Task> _getFilteredTasks(List<Task> allTasks) {
     return allTasks.where((task) {
+      // Filter out completed tasks
+      if (task.isCompleted) {
+        return false;
+      }
+
       // Filter by search query
       final matchesSearch = task.title.toLowerCase().contains(
         _searchQuery.toLowerCase(),
@@ -57,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  // Get AI prioritized tasks 
+  // Get AI prioritized tasks
   List<Task> _getAiSuggestions(List<Task> allTasks) {
     final highPriorityTasks =
         allTasks
@@ -103,6 +108,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Task Genius'),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DashboardScreen()),
+              );
+            },
+            icon: Icon(Icons.analytics_outlined),
+          ),
           // Notification icon with badge
           Consumer<NotificationProvider>(
             builder: (context, notificationProvider, _) {
@@ -175,7 +189,6 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               child: Column(
                 children: [
-                  
                   TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
@@ -245,10 +258,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           checkmarkColor:
                               isSelected
                                   ? Colors.white
-                                  : Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.color, 
+                                  : Theme.of(
+                                    context,
+                                  ).textTheme.bodyLarge?.color,
                         ),
                       );
                     }).toList(),
@@ -607,7 +619,7 @@ class _HomeScreenState extends State<HomeScreen> {
               hasScrollBody: false,
 
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 24), 
+                padding: const EdgeInsets.only(bottom: 24),
 
                 child: Center(
                   child: Column(
@@ -646,7 +658,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.all(12),
                       child: Row(
                         children: [
-                          
                           Checkbox(
                             value: task.isCompleted,
                             activeColor: Theme.of(context).primaryColor,
@@ -756,9 +767,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ],
       ),
-
-     
-    
     );
   }
 

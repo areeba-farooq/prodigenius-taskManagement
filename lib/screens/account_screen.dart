@@ -158,9 +158,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     // User profile card
                     Center(
                       child: Container(
-                        constraints: const BoxConstraints(
-                          maxWidth: 600,
-                        ), 
+                        constraints: const BoxConstraints(maxWidth: 600),
                         child: Card(
                           elevation: 4,
                           shape: RoundedRectangleBorder(
@@ -460,23 +458,23 @@ class _AccountScreenState extends State<AccountScreen> {
                       ),
                       child: Column(
                         children: [
-                          _buildSettingsItem(
-                            context,
-                            Icons.notifications_active,
-                            'Test Full Notification',
-                            'Test the complete notification flow',
-                            () {
-                              NotificationService.instance
-                                  .testNotificationFlow();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Test notification flow triggered!',
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                          // _buildSettingsItem(
+                          //   context,
+                          //   Icons.notifications_active,
+                          //   'Test Full Notification',
+                          //   'Test the complete notification flow',
+                          //   () {
+                          //     NotificationService.instance
+                          //         .testNotificationFlow();
+                          //     ScaffoldMessenger.of(context).showSnackBar(
+                          //       const SnackBar(
+                          //         content: Text(
+                          //           'Test notification flow triggered!',
+                          //         ),
+                          //       ),
+                          //     );
+                          //   },
+                          // ),
                           _buildSettingsItem(
                             context,
                             Icons.notifications,
@@ -928,7 +926,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
               TextButton(
                 onPressed: () async {
-                  Navigator.pop(context); 
+                  Navigator.pop(context);
                   await authProvider.logout();
 
                   // Navigate to splash screen

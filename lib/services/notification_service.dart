@@ -42,6 +42,71 @@ class NotificationService {
           requestSoundPermission: true,
         );
 
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      const AndroidNotificationChannelGroup group =
+          AndroidNotificationChannelGroup(
+            'task_genius_group',
+            'Task Genius Notifications',
+            description: 'All notifications related to Task Genius',
+          );
+
+      final List<AndroidNotificationChannel> channels = [
+        AndroidNotificationChannel(
+          'task_reminder_channel',
+          'Task Reminders',
+          description: 'Notifications for upcoming tasks',
+          importance: Importance.max,
+          enableVibration: true,
+          showBadge: true,
+        ),
+        AndroidNotificationChannel(
+          'task_deadline_channel',
+          'Task Deadlines',
+          description: 'Notifications for task deadlines',
+          importance: Importance.max,
+          enableVibration: true,
+          showBadge: true,
+        ),
+        AndroidNotificationChannel(
+          'task_schedule_channel',
+          'Task Schedule',
+          description: 'Notifications for scheduled tasks',
+          importance: Importance.max,
+          enableVibration: true,
+          showBadge: true,
+        ),
+        AndroidNotificationChannel(
+          'daily_digest_channel',
+          'Daily Task Digest',
+          description: 'Daily summary of your tasks',
+          importance: Importance.max,
+          enableVibration: true,
+          showBadge: true,
+        ),
+        AndroidNotificationChannel(
+          'test_channel',
+          'Test Notifications',
+          description: 'Channel for testing notifications',
+          importance: Importance.max,
+          enableVibration: true,
+          showBadge: true,
+        ),
+      ];
+
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannelGroup(group);
+
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >()
+          ?.createNotificationChannel(
+            channels[0],
+          ); // Pass the first channel as an example
+    }
     final InitializationSettings initializationSettings =
         InitializationSettings(
           android: initializationSettingsAndroid,
@@ -148,13 +213,15 @@ class NotificationService {
           'task_reminder_channel',
           'Task Reminders',
           channelDescription: 'Notifications for upcoming tasks',
-          importance: Importance.high,
-          priority: Priority.high,
+          importance: Importance.max,
+          priority: Priority.max,
           icon: '@mipmap/ic_launcher',
           color: Color(_getPriorityColor(task.priority)),
           ledColor: Color(_getPriorityColor(task.priority)),
-          ledOnMs: 1000,
-          ledOffMs: 500,
+          // ledOnMs: 1000,
+          // ledOffMs: 500,
+          // fullScreenIntent: true,
+          // visibility: NotificationVisibility.public,
         );
 
     // Notification details for iOS
@@ -335,48 +402,48 @@ class NotificationService {
     );
   }
 
-  Future<void> showTestNotification() async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'test_channel',
-          'Test Notifications',
-          channelDescription: 'Channel for testing notifications',
-          importance: Importance.high,
-          priority: Priority.high,
-        );
+  // Future<void> showTestNotification() async {
+  //   const AndroidNotificationDetails androidDetails =
+  //       AndroidNotificationDetails(
+  //         'test_channel',
+  //         'Test Notifications',
+  //         channelDescription: 'Channel for testing notifications',
+  //         importance: Importance.high,
+  //         priority: Priority.high,
+  //       );
 
-    const NotificationDetails notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: DarwinNotificationDetails(),
-    );
+  //   const NotificationDetails notificationDetails = NotificationDetails(
+  //     android: androidDetails,
+  //     iOS: DarwinNotificationDetails(),
+  //   );
 
-    await flutterLocalNotificationsPlugin.show(
-      999,
-      'Test Notification',
-      'This is a test notification from Task Genius',
-      notificationDetails,
-    );
+  //   await flutterLocalNotificationsPlugin.show(
+  //     999,
+  //     'Test Notification',
+  //     'This is a test notification from Task Genius',
+  //     notificationDetails,
+  //   );
 
-    debugPrint("Test notification shown");
-  }
+  //   debugPrint("Test notification shown");
+  // }
 
   // Update to the testNotificationFlow method
-  Future<void> testNotificationFlow() async {
-    // Show a system notification
-    await showTestNotification();
+  // Future<void> testNotificationFlow() async {
+  //   // Show a system notification
+  //   await showTestNotification();
 
-    // Then add to the notification provider
-    await _addToNotificationProvider(
-      'Test Notification',
-      'This is a test notification to verify the notification flow works correctly.',
-      NotificationType.task,
-      null,
-    );
+  //   // Then add to the notification provider
+  //   await _addToNotificationProvider(
+  //     'Test Notification',
+  //     'This is a test notification to verify the notification flow works correctly.',
+  //     NotificationType.task,
+  //     null,
+  //   );
 
-    debugPrint(
-      "Test notification flow complete. Check notification screen and unread count.",
-    );
-  }
+  //   debugPrint(
+  //     "Test notification flow complete. Check notification screen and unread count.",
+  //   );
+  // }
 
   // Schedule deadline notification (for when the task is due)
   Future<void> scheduleDeadlineNotification(Task task) async {
