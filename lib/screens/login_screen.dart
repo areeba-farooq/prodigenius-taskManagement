@@ -163,6 +163,30 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
+            child: Column(
+              children: [
+                Container(
+                  width: 150,
+                  height: 150,
+                  margin: EdgeInsets.only(top: 180),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(75),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                    image: DecorationImage(
+                      image: AssetImage('assets/playstore-icon.png'),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // Back button

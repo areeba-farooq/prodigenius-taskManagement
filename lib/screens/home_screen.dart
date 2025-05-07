@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/screens/dashboard_screen.dart';
+import 'package:taskgenius/screens/goal_screen.dart';
 import 'package:taskgenius/screens/notification_screen.dart';
 import 'package:taskgenius/screens/task_detail_screen.dart';
 import 'package:taskgenius/screens/task_schedule_screen.dart';
@@ -108,6 +109,15 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Task Genius'),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => GoalScreen()),
+              );
+            },
+            icon: Icon(Icons.golf_course_sharp),
+          ),
           IconButton(
             onPressed: () {
               Navigator.push(

@@ -37,18 +37,14 @@ class SplashScreen extends StatelessWidget {
                       spreadRadius: 5,
                     ),
                   ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.check_circle_outline,
-                    size: 100,
-                    color: Theme.of(context).primaryColor,
+                  image: DecorationImage(
+                    image: AssetImage('assets/playstore-icon.png'),
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
-              
               const SizedBox(height: 40),
-              
+
               // App Name
               const Text(
                 'Task Genius',
@@ -58,24 +54,21 @@ class SplashScreen extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Tagline
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
                   'AI-powered task management to boost your productivity',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
-              
+
               const SizedBox(height: 80),
-              
+
               // Get Started Button
               ElevatedButton(
                 onPressed: () {
@@ -100,24 +93,19 @@ class SplashScreen extends StatelessWidget {
                 ),
                 child: const Text(
                   'Get Started',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Sign Up Text
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const Text(
                     'Don\'t have an account?',
-                    style: TextStyle(
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(color: Colors.white),
                   ),
                   TextButton(
                     onPressed: () {
@@ -128,9 +116,7 @@ class SplashScreen extends StatelessWidget {
                         ),
                       );
                     },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
-                    ),
+                    style: TextButton.styleFrom(foregroundColor: Colors.white),
                     child: const Text(
                       'Sign Up',
                       style: TextStyle(

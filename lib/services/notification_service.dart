@@ -33,7 +33,7 @@ class NotificationService {
   Future<void> initialize() async {
     // Initialize for Android
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('assets/playstore-icon.png');
 
     // Initialize for iOS
     final DarwinInitializationSettings initializationSettingsIOS =
@@ -100,7 +100,6 @@ class NotificationService {
           showBadge: true,
         ),
       ];
-     
 
       await flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -224,13 +223,12 @@ class NotificationService {
           channelDescription: 'Notifications for upcoming tasks',
           importance: Importance.max,
           priority: Priority.max,
-          icon: '@mipmap/ic_launcher',
+          icon: 'assets/playstore-icon.png',
           color: Color(_getPriorityColor(task.priority)),
           ledColor: Color(_getPriorityColor(task.priority)),
           ledOnMs: 1000,
           ledOffMs: 500,
-          fullScreenIntent:
-              task.priority == 'High', 
+          fullScreenIntent: task.priority == 'High',
           visibility: NotificationVisibility.public,
           enableVibration: true,
           playSound: true,
@@ -370,7 +368,7 @@ class NotificationService {
           channelDescription: 'Notifications for scheduled tasks',
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: 'assets/playstore-icon.png',
           color: Color(0xFF4CAF50),
         );
 
@@ -514,7 +512,7 @@ class NotificationService {
           channelDescription: 'Notifications for task deadlines',
           importance: Importance.high,
           priority: Priority.high,
-          icon: '@mipmap/ic_launcher',
+          icon: 'assets/playstore-icon.png',
         );
 
     final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails();
@@ -548,30 +546,29 @@ class NotificationService {
   }
 
   Future<void> showGoalAchievedNotification(Goal goal) async {
-    final AndroidNotificationDetails
-    androidDetails = AndroidNotificationDetails(
-      'goal_achievements_channel',
-      'Goal Achievements',
-      channelDescription: 'Notifications for goal achievements',
-      importance: Importance.max, 
-      priority: Priority.max, 
-      color: Colors.green,
-      ledColor: Colors.green,
-      ledOnMs: 1000,
-      ledOffMs: 500,
-      enableVibration: true,
-      playSound: true, 
-      visibility:
-          NotificationVisibility.public,
-      ticker: 'Goal achievement notification',
-    );
+    final AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          'goal_achievements_channel',
+          'Goal Achievements',
+          channelDescription: 'Notifications for goal achievements',
+          importance: Importance.max,
+          priority: Priority.max,
+          color: Colors.green,
+          ledColor: Colors.green,
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          enableVibration: true,
+          playSound: true,
+          visibility: NotificationVisibility.public,
+          ticker: 'Goal achievement notification',
+        );
 
     final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
       sound: 'default',
-      badgeNumber: 1, 
+      badgeNumber: 1,
     );
 
     // Combined notification details
@@ -586,7 +583,7 @@ class NotificationService {
       'Goal Achieved! 🎉',
       'You completed your goal: ${goal.title}',
       notificationDetails,
-      payload: 'goal_${goal.id}', 
+      payload: 'goal_${goal.id}',
     );
 
     // Add to notification provider for in-app notification list
@@ -652,9 +649,15 @@ class NotificationService {
           'daily_digest_channel',
           'Daily Task Digest',
           channelDescription: 'Daily summary of your tasks',
-          importance: Importance.high,
-          priority: Priority.high,
+          importance: Importance.max,
+          priority: Priority.max,
           styleInformation: BigTextStyleInformation(''),
+
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          enableVibration: true,
+          playSound: true,
+          visibility: NotificationVisibility.public,
         );
 
     final NotificationDetails notificationDetails = NotificationDetails(

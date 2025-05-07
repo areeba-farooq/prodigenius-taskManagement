@@ -16,16 +16,12 @@ class _GoalScreenState extends State<GoalScreen>
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
-  int _targetTaskCount = 5;
-  GoalPeriod _selectedPeriod = GoalPeriod.daily;
-  List<String> _selectedCategories = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForNewAchievements();
     });
@@ -41,7 +37,6 @@ class _GoalScreenState extends State<GoalScreen>
   void _checkForNewAchievements() {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     if (taskProvider.hasNewAchievements()) {
-      
       final goals = taskProvider.goals;
       goals.sort(
         (a, b) => (b.lastAchievedAt ?? DateTime(1970)).compareTo(
@@ -76,10 +71,10 @@ class _GoalScreenState extends State<GoalScreen>
           return TabBarView(
             controller: _tabController,
             children: [
-              
+              // Daily goals
               _buildGoalList(taskProvider, GoalPeriod.daily),
 
-              
+              // Weekly goals
               _buildGoalList(taskProvider, GoalPeriod.weekly),
             ],
           );
@@ -419,164 +414,175 @@ class _GoalScreenState extends State<GoalScreen>
 
   void _showAddGoalDialog(BuildContext context) {
     _titleController.clear();
-    _targetTaskCount = 5;
-    _selectedPeriod = GoalPeriod.daily;
-    _selectedCategories = [];
+
+    // Initialize these variables but don't make them class members
+    int targetTaskCount = 5;
+    GoalPeriod selectedPeriod = GoalPeriod.daily;
+    String? selectedCategory; // Changed to a single String instead of a List
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         final taskProvider = Provider.of<TaskProvider>(context, listen: false);
 
-        return AlertDialog(
-          title: const Text('Add New Goal'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Goal title
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Goal Title',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a title';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Target task count
-                  Row(
+        // Use StatefulBuilder to rebuild the dialog when state changes
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Add New Goal'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Target: $_targetTaskCount tasks',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                      // Goal title
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Goal Title',
+                          border: OutlineInputBorder(),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.remove),
-                        onPressed: () {
-                          if (_targetTaskCount > 1) {
-                            setState(() {
-                              _targetTaskCount--;
-                            });
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a title';
                           }
+                          return null;
                         },
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () {
-                          setState(() {
-                            _targetTaskCount++;
+
+                      const SizedBox(height: 16),
+
+                      // Target task count
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Target: $targetTaskCount tasks',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: () {
+                              if (targetTaskCount > 1) {
+                                // Use setDialogState instead of setState
+                                setDialogState(() {
+                                  targetTaskCount--;
+                                });
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () {
+                              // Use setDialogState instead of setState
+                              setDialogState(() {
+                                targetTaskCount++;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Goal period
+                      const Text(
+                        'Goal Period:',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      SegmentedButton<GoalPeriod>(
+                        segments: const [
+                          ButtonSegment(
+                            value: GoalPeriod.daily,
+                            label: Text('Daily'),
+                          ),
+                          ButtonSegment(
+                            value: GoalPeriod.weekly,
+                            label: Text('Weekly'),
+                          ),
+                        ],
+                        selected: {selectedPeriod},
+                        onSelectionChanged: (Set<GoalPeriod> selection) {
+                          // Use setDialogState instead of setState
+                          setDialogState(() {
+                            selectedPeriod = selection.first;
                           });
                         },
                       ),
+
+                      const SizedBox(height: 16),
+
+                      // Category filter - now single selection
+                      const Text(
+                        'Filter by Category (Optional):',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            taskProvider.categories.map((category) {
+                              final isSelected = selectedCategory == category;
+
+                              return ChoiceChip(
+                                label: Text(category),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  // Use setDialogState instead of setState
+                                  setDialogState(() {
+                                    if (selected) {
+                                      selectedCategory = category;
+                                    } else {
+                                      selectedCategory = null;
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
+                      ),
                     ],
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Goal period
-                  const Text(
-                    'Goal Period:',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  SegmentedButton<GoalPeriod>(
-                    segments: const [
-                      ButtonSegment(
-                        value: GoalPeriod.daily,
-                        label: Text('Daily'),
-                      ),
-                      ButtonSegment(
-                        value: GoalPeriod.weekly,
-                        label: Text('Weekly'),
-                      ),
-                    ],
-                    selected: {_selectedPeriod},
-                    onSelectionChanged: (Set<GoalPeriod> selection) {
-                      setState(() {
-                        _selectedPeriod = selection.first;
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Category filter
-                  const Text(
-                    'Filter by Categories (Optional):',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        taskProvider.categories.map((category) {
-                          final isSelected = _selectedCategories.contains(
-                            category,
-                          );
-
-                          return FilterChip(
-                            label: Text(category),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedCategories.add(category);
-                                } else {
-                                  _selectedCategories.remove(category);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  // Create the goal
-                  final goal = Goal(
-                    title: _titleController.text.trim(),
-                    targetTaskCount: _targetTaskCount,
-                    period: _selectedPeriod,
-                    taskCategories: _selectedCategories,
-                  );
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Create the goal
+                      final goal = Goal(
+                        title: _titleController.text.trim(),
+                        targetTaskCount: targetTaskCount,
+                        period: selectedPeriod,
+                        taskCategories:
+                            selectedCategory != null ? [selectedCategory!] : [],
+                      );
 
-                  // Add to provider
-                  taskProvider.addGoal(goal);
+                      // Add to provider
+                      taskProvider.addGoal(goal);
 
-                  
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Add Goal'),
-            ),
-          ],
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Add Goal'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -584,134 +590,145 @@ class _GoalScreenState extends State<GoalScreen>
 
   void _showEditGoalDialog(BuildContext context, Goal goal) {
     _titleController.text = goal.title;
-    _targetTaskCount = goal.targetTaskCount;
-    _selectedPeriod = goal.period;
-    _selectedCategories = List.from(goal.taskCategories);
+
+    // Initialize these variables locally, not as class members
+    int targetTaskCount = goal.targetTaskCount;
+    // Initialize with the first category if there is one, otherwise null
+    String? selectedCategory =
+        goal.taskCategories.isNotEmpty ? goal.taskCategories.first : null;
 
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         final taskProvider = Provider.of<TaskProvider>(context, listen: false);
 
-        return AlertDialog(
-          title: const Text('Edit Goal'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Goal title
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Goal Title',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a title';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Target task count
-                  Row(
+        // Use StatefulBuilder to rebuild the dialog when state changes
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Edit Goal'),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Target: $_targetTaskCount tasks',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
+                      // Goal title
+                      TextFormField(
+                        controller: _titleController,
+                        decoration: const InputDecoration(
+                          labelText: 'Goal Title',
+                          border: OutlineInputBorder(),
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.remove),
-                        onPressed: () {
-                          if (_targetTaskCount > 1) {
-                            setState(() {
-                              _targetTaskCount--;
-                            });
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter a title';
                           }
+                          return null;
                         },
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () {
-                          setState(() {
-                            _targetTaskCount++;
-                          });
-                        },
+
+                      const SizedBox(height: 16),
+
+                      // Target task count
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Target: $targetTaskCount tasks',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.remove),
+                            onPressed: () {
+                              if (targetTaskCount > 1) {
+                                // Use setDialogState instead of setState
+                                setDialogState(() {
+                                  targetTaskCount--;
+                                });
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () {
+                              // Use setDialogState instead of setState
+                              setDialogState(() {
+                                targetTaskCount++;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Category filter - now single selection
+                      const Text(
+                        'Filter by Category (Optional):',
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            taskProvider.categories.map((category) {
+                              final isSelected = selectedCategory == category;
+
+                              return ChoiceChip(
+                                label: Text(category),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  // Use setDialogState instead of setState
+                                  setDialogState(() {
+                                    if (selected) {
+                                      selectedCategory = category;
+                                    } else {
+                                      selectedCategory = null;
+                                    }
+                                  });
+                                },
+                              );
+                            }).toList(),
                       ),
                     ],
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Category filter
-                  const Text(
-                    'Filter by Categories (Optional):',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        taskProvider.categories.map((category) {
-                          final isSelected = _selectedCategories.contains(
-                            category,
-                          );
-
-                          return FilterChip(
-                            label: Text(category),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _selectedCategories.add(category);
-                                } else {
-                                  _selectedCategories.remove(category);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  // Update the goal
-                  final updatedGoal = goal.copyWith(
-                    title: _titleController.text.trim(),
-                    targetTaskCount: _targetTaskCount,
-                    taskCategories: _selectedCategories,
-                  );
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Update the goal
+                      final updatedGoal = goal.copyWith(
+                        title: _titleController.text.trim(),
+                        targetTaskCount: targetTaskCount,
+                        taskCategories:
+                            selectedCategory != null ? [selectedCategory!] : [],
+                      );
 
-                  // Update provider
-                  taskProvider.updateGoal(updatedGoal);
+                      // Update provider
+                      taskProvider.updateGoal(updatedGoal);
 
-                  
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Save Changes'),
-            ),
-          ],
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            );
+          },
         );
       },
     );

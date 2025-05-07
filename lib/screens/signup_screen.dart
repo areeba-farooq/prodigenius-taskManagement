@@ -134,6 +134,30 @@ class _SignupScreenState extends State<SignupScreen> {
                 ],
               ),
             ),
+            child: Column(
+              children: [
+                Container(
+                  width: 150,
+                  height: 150,
+                  margin: EdgeInsets.only(top: 100),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(75),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
+                    image: DecorationImage(
+                      image: AssetImage('assets/playstore-icon.png'),
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
 
           // Back button
@@ -226,7 +250,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                           ),
                                         ),
                                       ),
-                                      
+
                                       IconButton(
                                         icon: Icon(
                                           Icons.close,
@@ -395,15 +419,19 @@ class _SignupScreenState extends State<SignupScreen> {
                                       text: TextSpan(
                                         text: 'I agree to the ',
                                         style: TextStyle(
-                                     
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  
+                                          color:
+                                              Theme.of(
+                                                context,
+                                              ).colorScheme.onSurface,
                                         ),
-                                        children:  [
+                                        children: [
                                           TextSpan(
                                             text: 'Terms of Service',
                                             style: TextStyle(
-                                              color: Theme.of(context).colorScheme.primary,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -411,7 +439,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                           TextSpan(
                                             text: 'Privacy Policy',
                                             style: TextStyle(
-                                              color: Theme.of(context).colorScheme.primary,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -471,10 +502,14 @@ class _SignupScreenState extends State<SignupScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                   Text('Already have an account?'
-                                  , style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onSurface,
-                                  ),
+                                  Text(
+                                    'Already have an account?',
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                    ),
                                   ),
                                   TextButton(
                                     onPressed: () {
@@ -486,12 +521,15 @@ class _SignupScreenState extends State<SignupScreen> {
                                         ),
                                       );
                                     },
-                                    child:  Text(
+                                    child: Text(
                                       'Login',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        
-                                        color: Theme.of(context).colorScheme.primary,
+
+                                        color:
+                                            Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
                                       ),
                                     ),
                                   ),

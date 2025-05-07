@@ -5,7 +5,7 @@
     <application
         android:label="taskgenius"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="assets/playstore-icon.png">
         <!-- Add this line to disable Impeller -->
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">

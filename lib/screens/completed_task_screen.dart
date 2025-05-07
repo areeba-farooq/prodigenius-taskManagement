@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/screens/dashboard_screen.dart';
+import 'package:taskgenius/screens/goal_screen.dart';
 import 'package:taskgenius/screens/notification_screen.dart';
 import 'package:taskgenius/screens/task_detail_screen.dart';
 import 'package:taskgenius/services/ai_service.dart';
@@ -77,6 +78,15 @@ class _CompletedTasksScreenState extends State<CompletedTasksScreen> {
       appBar: AppBar(
         title: const Text('Completed Tasks'),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => GoalScreen()),
+              );
+            },
+            icon: Icon(Icons.golf_course_sharp),
+          ),
           IconButton(
             onPressed: () {
               Navigator.push(

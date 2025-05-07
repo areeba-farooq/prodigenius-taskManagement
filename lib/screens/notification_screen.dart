@@ -126,7 +126,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         iconColor = Colors.green;
         break;
       case NotificationType.achievement:
-        notificationIcon = Icons.schedule;
+        notificationIcon = Icons.track_changes;
         iconColor = Colors.amber;
         break;
     }
