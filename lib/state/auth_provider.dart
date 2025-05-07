@@ -81,7 +81,7 @@ class AuthProvider extends ChangeNotifier {
   
   AuthProvider() {
     _initAuthListener();
-    _loadUserFromPrefs();
+    loadUserFromPrefs();
   }
 
   // Initialize Firebase Auth state listener
@@ -141,11 +141,11 @@ class AuthProvider extends ChangeNotifier {
         _currentUser = User.fromFirebaseUser(firebaseUser);
 
         // Save user data to Firestore
-        await _saveUserToFirestore(_currentUser!);
+        await saveUserToFirestore(_currentUser!);
       }
 
       // Save to shared prefs for offline access
-      await _saveUserToPrefs(_currentUser!);
+      await saveUserToPrefs(_currentUser!);
       // Set up TaskProvider for this user
       if (_context != null && _currentUser != null) {
         await Provider.of<TaskProvider>(
@@ -166,7 +166,7 @@ class AuthProvider extends ChangeNotifier {
       print('Error getting user data from Firestore: $e');
       
       _currentUser = User.fromFirebaseUser(firebaseUser);
-      await _saveUserToPrefs(_currentUser!);
+      await saveUserToPrefs(_currentUser!);
       // Set up TaskProvider for this user even in error case
       if (_context != null && _currentUser != null) {
         await Provider.of<TaskProvider>(
@@ -186,7 +186,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Save user data to Firestore
-  Future<void> _saveUserToFirestore(User user) async {
+  Future<void> saveUserToFirestore(User user) async {
     try {
       print('Attempting to save user to Firestore: ${user.id}');
 
@@ -210,7 +210,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Load user data from shared preferences
-  Future<void> _loadUserFromPrefs() async {
+  Future<void> loadUserFromPrefs() async {
     _setLoading(true);
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -235,7 +235,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // Save user data to shared preferences
-  Future<void> _saveUserToPrefs(User user) async {
+  Future<void> saveUserToPrefs(User user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_userKey, user.toJson());
@@ -535,7 +535,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       // Save to shared prefs
-      await _saveUserToPrefs(_currentUser!);
+      await saveUserToPrefs(_currentUser!);
 
       
       notifyListeners();
