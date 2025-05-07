@@ -1,13 +1,14 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:taskgenius/models/goal.dart';
 import 'package:taskgenius/models/notification.dart';
 import 'package:taskgenius/state/notification_provider.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:taskgenius/models/task.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:ui';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -49,7 +50,6 @@ class NotificationService {
             'Task Genius Notifications',
             description: 'All notifications related to Task Genius',
           );
-
       final List<AndroidNotificationChannel> channels = [
         AndroidNotificationChannel(
           'task_reminder_channel',
@@ -84,6 +84,14 @@ class NotificationService {
           showBadge: true,
         ),
         AndroidNotificationChannel(
+          'goal_achievements_channel',
+          'Goal Achievements',
+          description: 'Notifications for goal achievements',
+          importance: Importance.max,
+          enableVibration: true,
+          showBadge: true,
+        ),
+        AndroidNotificationChannel(
           'test_channel',
           'Test Notifications',
           description: 'Channel for testing notifications',
@@ -92,6 +100,7 @@ class NotificationService {
           showBadge: true,
         ),
       ];
+     
 
       await flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -218,10 +227,14 @@ class NotificationService {
           icon: '@mipmap/ic_launcher',
           color: Color(_getPriorityColor(task.priority)),
           ledColor: Color(_getPriorityColor(task.priority)),
-          // ledOnMs: 1000,
-          // ledOffMs: 500,
-          // fullScreenIntent: true,
-          // visibility: NotificationVisibility.public,
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          fullScreenIntent:
+              task.priority == 'High', 
+          visibility: NotificationVisibility.public,
+          enableVibration: true,
+          playSound: true,
+          category: AndroidNotificationCategory.reminder,
         );
 
     // Notification details for iOS
@@ -402,6 +415,31 @@ class NotificationService {
     );
   }
 
+  Future<bool> areNotificationsPermissionGranted() async {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      final AndroidFlutterLocalNotificationsPlugin? androidPlugin =
+          flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
+
+      if (androidPlugin == null) return false;
+
+      final bool? granted = await androidPlugin.areNotificationsEnabled();
+      return granted ?? false;
+    }
+    return true;
+  }
+
+  Future<void> checkAndRequestNotificationPermissions() async {
+    final bool granted = await areNotificationsPermissionGranted();
+    if (!granted) {
+      await _requestPermissions();
+      debugPrint("Notification permissions not granted, requested again");
+    } else {
+      debugPrint("Notification permissions are granted");
+    }
+  }
   // Future<void> showTestNotification() async {
   //   const AndroidNotificationDetails androidDetails =
   //       AndroidNotificationDetails(
@@ -507,6 +545,59 @@ class NotificationService {
       NotificationType.deadline,
       task.id,
     );
+  }
+
+  Future<void> showGoalAchievedNotification(Goal goal) async {
+    final AndroidNotificationDetails
+    androidDetails = AndroidNotificationDetails(
+      'goal_achievements_channel',
+      'Goal Achievements',
+      channelDescription: 'Notifications for goal achievements',
+      importance: Importance.max, 
+      priority: Priority.max, 
+      color: Colors.green,
+      ledColor: Colors.green,
+      ledOnMs: 1000,
+      ledOffMs: 500,
+      enableVibration: true,
+      playSound: true, 
+      visibility:
+          NotificationVisibility.public,
+      ticker: 'Goal achievement notification',
+    );
+
+    final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      sound: 'default',
+      badgeNumber: 1, 
+    );
+
+    // Combined notification details
+    final NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iOSDetails,
+    );
+
+    // Show system notification
+    await flutterLocalNotificationsPlugin.show(
+      goal.id.hashCode, // Use goal ID for unique notification ID
+      'Goal Achieved! 🎉',
+      'You completed your goal: ${goal.title}',
+      notificationDetails,
+      payload: 'goal_${goal.id}', 
+    );
+
+    // Add to notification provider for in-app notification list
+    await _addToNotificationProvider(
+      'Goal Achieved! 🎉',
+      'You completed your goal: ${goal.title}',
+      NotificationType.achievement,
+      null,
+    );
+
+    debugPrint("Goal achievement notification shown for goal: ${goal.title}");
   }
 
   // Cancel notifications for a specific task

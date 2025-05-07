@@ -1,6 +1,3 @@
-
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -108,7 +105,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
       timeAgo = DateFormat('MMM d').format(notification.timestamp);
     }
 
-    
     IconData notificationIcon;
     Color iconColor;
 
@@ -129,6 +125,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
         notificationIcon = Icons.schedule;
         iconColor = Colors.green;
         break;
+      case NotificationType.achievement:
+        notificationIcon = Icons.schedule;
+        iconColor = Colors.amber;
+        break;
     }
 
     return Dismissible(
@@ -141,7 +141,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       direction: DismissDirection.endToStart,
       onDismissed: (direction) {
-        
         Provider.of<NotificationProvider>(
           context,
           listen: false,

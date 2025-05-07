@@ -155,6 +155,18 @@ class MainAppScaffold extends StatefulWidget {
 class _MainAppScaffoldState extends State<MainAppScaffold> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
+  @override
+  void initState() {
+    super.initState();
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    taskProvider.isCleanupNeeded().then((needsCleanup) {
+      if (needsCleanup) {
+        taskProvider.removeOldCompletedTasks().then((_) {
+          taskProvider.updateLastCleanupDate();
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -206,7 +218,7 @@ class _MainAppScaffoldState extends State<MainAppScaffold> {
           BottomNavigationBarItem(
             icon: Icon(Icons.task_alt),
             label: 'Completed',
-          ),
+          ),       
         ],
       ),
     );

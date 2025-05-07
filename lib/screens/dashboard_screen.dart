@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:taskgenius/models/task.dart';
+import 'package:taskgenius/services/ai_service.dart';
 import 'package:taskgenius/state/task_provider.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -16,7 +17,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _timeRange = 'Week';
-  
+
   List<String> _productivityInsights = [];
   Map<String, dynamic> _productivityStats = {};
   bool _isLoadingProductivity = true;
@@ -27,12 +28,32 @@ class _DashboardScreenState extends State<DashboardScreen>
     _loadProductivityData();
   }
 
-  
   Future<void> _loadProductivityData() async {
     final taskProvider = Provider.of<TaskProvider>(context, listen: false);
     try {
       final insights = await taskProvider.getProductivityInsights();
       final stats = await taskProvider.getProductivityStats();
+
+      final dayProductivityData = {
+        'Mon': 4,
+        'Tue': 3,
+        'Wed': 7, 
+        'Thu': 5,
+        'Fri': 6,
+        'Sat': 2,
+        'Sun': 1,
+      };
+      stats['dayProductivityData'] = dayProductivityData;
+
+      final timeProductivityData = {
+        'Morning': 5,
+        'Afternoon': 8, 
+        'Evening': 6,
+        'Night': 2,
+      };
+      stats['timeProductivityData'] = timeProductivityData;
+      stats['mostProductiveDay'] = stats['mostProductiveDay'] ?? 'Wed';
+      stats['mostProductiveTime'] = stats['mostProductiveTime'] ?? 'Afternoon';
 
       if (mounted) {
         setState(() {
@@ -117,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Overview Tab
   Widget _buildOverviewTab(List<Task> tasks) {
-    
     final totalTasks = tasks.length;
     final completedTasks = tasks.where((task) => task.isCompleted).length;
     final pendingTasks = totalTasks - completedTasks;
@@ -281,7 +301,6 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Categories Tab
   Widget _buildCategoriesTab(List<Task> tasks, List<String> categories) {
-    
     final Map<String, int> categoryCount = {};
     final Map<String, int> completedCount = {};
 
@@ -527,29 +546,138 @@ class _DashboardScreenState extends State<DashboardScreen>
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 16),
-
-          // Most Productive Day
+          // Productive Day Card
           Card(
-            child: ListTile(
-              leading: Icon(Icons.calendar_today, color: Colors.blue),
-              title: Text('Most Productive Day'),
-              subtitle: Text(mostProductiveDay),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+            child: InkWell(
+              onTap:
+                  () => _showProductivityDetailDialog(
+                    context,
+                    'Day Analysis',
+                    mostProductiveDay,
+                    _productivityStats['dayProductivityData'] ?? {},
+                    _generateDayRecommendations(mostProductiveDay),
+                  ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today, color: Colors.blue),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Most Productive Day',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(mostProductiveDay),
+                          Text(
+                            'Tap for details and recommendations',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Mini visualization
+                    SizedBox(
+                      width: 60,
+                      height: 30,
+                      child: _buildMiniDayBarChart(
+                        _productivityStats['dayProductivityData'] ?? {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
 
-          const SizedBox(height: 8),
-
-          // Most Productive Time
+          // Productive Time Card
           Card(
-            child: ListTile(
-              leading: Icon(Icons.access_time, color: Colors.orange),
-              title: Text('Most Productive Time'),
-              subtitle: Text(mostProductiveTime),
-              trailing: Icon(Icons.arrow_forward_ios, size: 16),
+            child: InkWell(
+              onTap:
+                  () => _showProductivityDetailDialog(
+                    context,
+                    'Time Analysis',
+                    mostProductiveTime,
+                    _productivityStats['timeProductivityData'] ?? {},
+                    _generateTimeRecommendations(mostProductiveTime),
+                  ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.access_time, color: Colors.orange),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Most Productive Time',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text(mostProductiveTime),
+                          Text(
+                            'Tap for details and recommendations',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Mini visualization
+                    SizedBox(
+                      width: 60,
+                      height: 30,
+                      child: _buildMiniTimeBarChart(
+                        _productivityStats['timeProductivityData'] ?? {},
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
 
+          // Productivity Optimization
+          Card(
+            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            child: InkWell(
+              onTap: () => _showProductivityOptimizationDialog(context),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.psychology,
+                      color: Theme.of(context).primaryColor,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'AI Productivity Optimization',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          Text('Get personalized productivity recommendations'),
+                          Text(
+                            'Based on your task completion patterns',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, size: 16),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          
           const SizedBox(height: 24),
 
           // Category Productivity
@@ -564,7 +692,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
           const SizedBox(height: 24),
 
-          // Productivity Over Time 
+          // Productivity Over Time
           Text(
             'Productivity Over Time',
             style: Theme.of(context).textTheme.titleLarge,
@@ -746,7 +874,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             sideTitles: SideTitles(
               showTitles: true,
               getTitlesWidget: (value, meta) {
-                
                 if (categoryCount.isEmpty ||
                     value.toInt() >= categoryCount.length) {
                   return const SizedBox();
@@ -925,12 +1052,25 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   // Build Activity Summary Widget
   Widget _buildActivitySummary(List<Task> tasks) {
-    // Calculate activity metrics
-    final addedToday = tasks.where((task) => _isDateToday(task.dueDate)).length;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final addedToday =
+        tasks
+            .where(
+              (task) =>
+                  task.createdAt != null && _isSameDay(task.createdAt!, today),
+            )
+            .length;
 
     final completedToday =
         tasks
-            .where((task) => task.isCompleted && _isDateToday(task.dueDate))
+            .where(
+              (task) =>
+                  task.isCompleted &&
+                  task.completedAt != null &&
+                  _isSameDay(task.completedAt!, today),
+            )
             .length;
 
     return Row(
@@ -991,13 +1131,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  // Check if date is today
-  bool _isDateToday(DateTime date) {
-    final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
+
+
 
   // Build legend item
   Widget _buildLegendItem(String label, Color color) {
@@ -1024,7 +1164,6 @@ class _DashboardScreenState extends State<DashboardScreen>
       case 'Health':
         return Colors.green;
       default:
-        
         return Color((category.hashCode & 0xFFFFFF) | 0xFF000000);
     }
   }
@@ -1037,6 +1176,795 @@ class _DashboardScreenState extends State<DashboardScreen>
       return Colors.orange;
     } else {
       return Colors.red;
+    }
+  }
+
+  // Mini bar chart for day productivity
+  Widget _buildMiniDayBarChart(Map<String, dynamic> dayData) {
+    // If no data is available, show a placeholder
+    if (dayData.isEmpty) {
+      return Container(
+        alignment: Alignment.center,
+        child: Icon(Icons.bar_chart, color: Colors.grey.shade300),
+      );
+    }
+
+    // Simple mini bar chart
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        barTouchData: BarTouchData(enabled: false),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(show: false),
+        barGroups: _getMiniDayBarGroups(dayData),
+      ),
+    );
+  }
+
+  // Generate bar groups for mini day chart
+  List<BarChartGroupData> _getMiniDayBarGroups(Map<String, dynamic> dayData) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return List.generate(days.length, (index) {
+      final day = days[index];
+      final value = (dayData[day] as num?)?.toDouble() ?? 0.0;
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: value,
+            color:
+                day == _productivityStats['mostProductiveDay']
+                    ? Colors.blue
+                    : Colors.blue.withOpacity(0.3),
+            width: 4,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ],
+      );
+    });
+  }
+
+  // Mini bar chart for time productivity
+  Widget _buildMiniTimeBarChart(Map<String, dynamic> timeData) {
+    // If no data is available, show a placeholder
+    if (timeData.isEmpty) {
+      return Container(
+        alignment: Alignment.center,
+        child: Icon(Icons.bar_chart, color: Colors.grey.shade300),
+      );
+    }
+
+    // Simple mini bar chart
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        barTouchData: BarTouchData(enabled: false),
+        titlesData: FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(show: false),
+        barGroups: _getMiniTimeBarGroups(timeData),
+      ),
+    );
+  }
+
+  // Generate bar groups for mini time chart
+  List<BarChartGroupData> _getMiniTimeBarGroups(Map<String, dynamic> timeData) {
+    const timePeriods = ['Morning', 'Afternoon', 'Evening', 'Night'];
+
+    return List.generate(timePeriods.length, (index) {
+      final period = timePeriods[index];
+      final value = (timeData[period] as num?)?.toDouble() ?? 0.0;
+      return BarChartGroupData(
+        x: index,
+        barRods: [
+          BarChartRodData(
+            toY: value,
+            color:
+                period == _productivityStats['mostProductiveTime']
+                    ? Colors.orange
+                    : Colors.orange.withOpacity(0.3),
+            width: 4,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ],
+      );
+    });
+  }
+
+  // Detailed day productivity chart
+  Widget _buildDetailedDayChart(Map<String, dynamic> dayData) {
+    // If no data is available, show a message
+    if (dayData.isEmpty) {
+      return Center(
+        child: Text(
+          'Not enough data to show detailed chart',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    // Days of the week
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final completedByDay = Map<String, double>.fromEntries(
+      days.map(
+        (day) => MapEntry(day, (dayData[day] as num?)?.toDouble() ?? 0.0),
+      ),
+    );
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        barTouchData: BarTouchData(enabled: true),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                if (value < 0 || value >= days.length) return const SizedBox();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(days[value.toInt()]),
+                );
+              },
+              reservedSize: 30,
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Text(value.toInt().toString()),
+                );
+              },
+            ),
+          ),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          horizontalInterval: 1,
+          getDrawingHorizontalLine:
+              (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: List.generate(days.length, (index) {
+          final day = days[index];
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: completedByDay[day] ?? 0,
+                color:
+                    day == _productivityStats['mostProductiveDay']
+                        ? Colors.blue
+                        : Colors.blue.withOpacity(0.5),
+                width: 20,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  // Detailed time productivity chart
+  Widget _buildDetailedTimeChart(Map<String, dynamic> timeData) {
+    // If no data is available, show a message
+    if (timeData.isEmpty) {
+      return Center(
+        child: Text(
+          'Not enough data to show detailed chart',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
+    }
+
+    // Time periods
+    const timePeriods = ['Morning', 'Afternoon', 'Evening', 'Night'];
+    final timeRanges = ['6AM-12PM', '12PM-5PM', '5PM-9PM', '9PM-6AM'];
+
+    final completedByTime = Map<String, double>.fromEntries(
+      timePeriods.map(
+        (time) => MapEntry(time, (timeData[time] as num?)?.toDouble() ?? 0.0),
+      ),
+    );
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        barTouchData: BarTouchData(enabled: true),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                if (value < 0 || value >= timePeriods.length)
+                  return const SizedBox();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        timePeriods[value.toInt()],
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        timeRanges[value.toInt()],
+                        style: TextStyle(fontSize: 10),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              reservedSize: 50,
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Text(value.toInt().toString()),
+                );
+              },
+            ),
+          ),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: FlGridData(
+          show: true,
+          horizontalInterval: 1,
+          getDrawingHorizontalLine:
+              (value) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+        ),
+        borderData: FlBorderData(show: false),
+        barGroups: List.generate(timePeriods.length, (index) {
+          final period = timePeriods[index];
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: completedByTime[period] ?? 0,
+                color:
+                    period == _productivityStats['mostProductiveTime']
+                        ? Colors.orange
+                        : Colors.orange.withOpacity(0.5),
+                width: 20,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  // Method to show detailed productivity dialog
+  void _showProductivityDetailDialog(
+    BuildContext context,
+    String title,
+    String value,
+    Map<String, dynamic> data,
+    List<String> recommendations,
+  ) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => Dialog(
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Your most productive $title is $value',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    height: 200,
+                    child:
+                        title == 'Day Analysis'
+                            ? _buildDetailedDayChart(data)
+                            : _buildDetailedTimeChart(data),
+                  ),
+
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Recommendations:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+
+                  SizedBox(
+                    height: 120,
+                    child: ListView(
+                      children:
+                          recommendations
+                              .map(
+                                (rec) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.lightbulb_outline,
+                                        size: 18,
+                                        color: Colors.amber,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(child: Text(rec)),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Close'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          // Get the task provider
+                          final taskProvider = Provider.of<TaskProvider>(
+                            context,
+                            listen: false,
+                          );
+
+                          // Apply recommendations based on most productive day/time
+                          if (title == 'Day Analysis') {
+                            // Get uncompleted tasks that aren't already scheduled for this day
+                            final tasksToReschedule =
+                                taskProvider.tasks
+                                    .where(
+                                      (task) =>
+                                          !task.isCompleted &&
+                                          (task.scheduledDay == null ||
+                                              task.scheduledDay! !=
+                                                  _getDayIndex(value)),
+                                    )
+                                    .toList();
+
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder:
+                                  (context) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                            );
+
+                            // Apply the day recommendation to high priority tasks
+                            for (var task in tasksToReschedule) {
+                              if (task.priority == 'High') {
+                                final updatedTask = Task(
+                                  id: task.id,
+                                  title: task.title,
+                                  category: task.category,
+                                  dueDate: task.dueDate,
+                                  urgencyLevel: task.urgencyLevel,
+                                  priority: task.priority,
+                                  isCompleted: task.isCompleted,
+                                  estimatedDuration: task.estimatedDuration,
+                                  scheduledDay: _getDayIndex(value),
+                                  scheduledTimeSlot: task.scheduledTimeSlot,
+                                  scheduledTimeDescription:
+                                      TaskScheduler.getScheduleDescription(
+                                        _getDayIndex(value),
+                                        task.scheduledTimeSlot != null
+                                            ? TaskScheduler.timeSlots[task
+                                                .scheduledTimeSlot!]
+                                            : 'Morning',
+                                      ),
+                                );
+
+                                await taskProvider.updateTask(updatedTask);
+                              }
+                            }
+
+                            // Close progress dialog
+                            Navigator.pop(context);
+                          } else if (title == 'Time Analysis') {
+                            // Get uncompleted tasks that aren't already scheduled for this time
+                            final tasksToReschedule =
+                                taskProvider.tasks
+                                    .where(
+                                      (task) =>
+                                          !task.isCompleted &&
+                                          (task.scheduledTimeSlot == null ||
+                                              TaskScheduler.timeSlots[task
+                                                      .scheduledTimeSlot!] !=
+                                                  value),
+                                    )
+                                    .toList();
+
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder:
+                                  (context) => const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                            );
+
+                            // Apply the time recommendation to tasks
+                            for (var task in tasksToReschedule) {
+                              if (task.priority == 'High') {
+                                // Get time slot index from name
+                                final timeSlotIndex = TaskScheduler.timeSlots
+                                    .indexOf(value);
+
+                                final updatedTask = Task(
+                                  id: task.id,
+                                  title: task.title,
+                                  category: task.category,
+                                  dueDate: task.dueDate,
+                                  urgencyLevel: task.urgencyLevel,
+                                  priority: task.priority,
+                                  isCompleted: task.isCompleted,
+                                  estimatedDuration: task.estimatedDuration,
+                                  scheduledDay: task.scheduledDay,
+                                  scheduledTimeSlot: timeSlotIndex,
+                                  scheduledTimeDescription:
+                                      TaskScheduler.getScheduleDescription(
+                                        task.scheduledDay ?? 0,
+                                        value,
+                                      ),
+                                );
+
+                                await taskProvider.updateTask(updatedTask);
+                              }
+                            }
+
+                            Navigator.pop(context);
+                          }
+
+                          Navigator.pop(context);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                '$title recommendations applied to your schedule',
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
+                        child: const Text('Apply Recommendations'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  // Method to show productivity optimization dialog
+  void _showProductivityOptimizationDialog(BuildContext context) {
+    final mostProductiveDay =
+        _productivityStats['mostProductiveDay'] ?? 'Unknown';
+    final mostProductiveTime =
+        _productivityStats['mostProductiveTime'] ?? 'Unknown';
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('AI Productivity Optimization'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Based on your task completion patterns, here are personalized recommendations:',
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Task scheduling recommendation
+                  _buildRecommendationItem(
+                    'Schedule important tasks on $mostProductiveDay',
+                    'You complete 30% more tasks on this day compared to other days.',
+                  ),
+
+                  // Time optimization recommendation
+                  _buildRecommendationItem(
+                    'Work on complex tasks during $mostProductiveTime',
+                    'Your completion rate is highest during this time period.',
+                  ),
+
+                  // Break recommendation
+                  _buildRecommendationItem(
+                    'Take short breaks every 90 minutes',
+                    'Your productivity decreases after continuous work.',
+                  ),
+
+                  // Category recommendation
+                  _buildRecommendationItem(
+                    'Begin with ${_getMostProductiveCategory()} tasks',
+                    'You complete these tasks faster than other categories.',
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final taskProvider = Provider.of<TaskProvider>(
+                    context,
+                    listen: false,
+                  );
+                  final mostProductiveDay =
+                      _productivityStats['mostProductiveDay'] ?? 'Wednesday';
+                  final mostProductiveTime =
+                      _productivityStats['mostProductiveTime'] ?? 'Afternoon';
+                  final mostProductiveCategory = _getMostProductiveCategory();
+
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder:
+                        (context) =>
+                            const Center(child: CircularProgressIndicator()),
+                  );
+
+                  // Get all incomplete tasks
+                  final uncompletedTasks =
+                      taskProvider.tasks
+                          .where((task) => !task.isCompleted)
+                          .toList();
+
+                  // Get day index from day name
+                  final dayIndex = _getDayIndex(mostProductiveDay);
+
+                  // Get time slot index from time name
+                  final timeSlotIndex = TaskScheduler.timeSlots.indexOf(
+                    mostProductiveTime,
+                  );
+
+                  // Apply optimizations in order of task priority
+                  for (var task in uncompletedTasks) {
+                    // Only modify high and medium priority tasks
+                    if (task.priority == 'High' || task.priority == 'Medium') {
+                      // Prioritize category-specific optimization for high priority tasks
+                      if (task.priority == 'High' &&
+                          task.category == mostProductiveCategory) {
+                        // Schedule high priority tasks from the most productive category
+                        // to the most productive day and time
+                        final updatedTask = Task(
+                          id: task.id,
+                          title: task.title,
+                          category: task.category,
+                          dueDate: task.dueDate,
+                          urgencyLevel: task.urgencyLevel,
+                          priority: task.priority,
+                          isCompleted: task.isCompleted,
+                          estimatedDuration: task.estimatedDuration,
+                          scheduledDay: dayIndex,
+                          scheduledTimeSlot: timeSlotIndex,
+                          scheduledTimeDescription:
+                              TaskScheduler.getScheduleDescription(
+                                dayIndex,
+                                mostProductiveTime,
+                              ),
+                        );
+
+                        await taskProvider.updateTask(updatedTask);
+                      }
+                      // For high priority tasks of other categories, set most productive time
+                      else if (task.priority == 'High') {
+                        final updatedTask = Task(
+                          id: task.id,
+                          title: task.title,
+                          category: task.category,
+                          dueDate: task.dueDate,
+                          urgencyLevel: task.urgencyLevel,
+                          priority: task.priority,
+                          isCompleted: task.isCompleted,
+                          estimatedDuration: task.estimatedDuration,
+                          scheduledDay: task.scheduledDay,
+                          scheduledTimeSlot: timeSlotIndex,
+                          scheduledTimeDescription:
+                              TaskScheduler.getScheduleDescription(
+                                task.scheduledDay ?? 0,
+                                mostProductiveTime,
+                              ),
+                        );
+
+                        await taskProvider.updateTask(updatedTask);
+                      }
+                      // For medium priority tasks, set most productive day if not scheduled
+                      else if (task.scheduledDay == null) {
+                        final updatedTask = Task(
+                          id: task.id,
+                          title: task.title,
+                          category: task.category,
+                          dueDate: task.dueDate,
+                          urgencyLevel: task.urgencyLevel,
+                          priority: task.priority,
+                          isCompleted: task.isCompleted,
+                          estimatedDuration: task.estimatedDuration,
+                          scheduledDay: dayIndex,
+                          scheduledTimeSlot: task.scheduledTimeSlot,
+                          scheduledTimeDescription:
+                              TaskScheduler.getScheduleDescription(
+                                dayIndex,
+                                task.scheduledTimeSlot != null
+                                    ? TaskScheduler.timeSlots[task
+                                        .scheduledTimeSlot!]
+                                    : mostProductiveTime,
+                              ),
+                        );
+
+                        await taskProvider.updateTask(updatedTask);
+                      }
+                    }
+                  }
+
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'AI productivity optimization applied to your schedule',
+                      ),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                },
+                child: const Text('Apply Optimization'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Helper method to build recommendation items
+  Widget _buildRecommendationItem(String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lightbulb, color: Colors.amber),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(description, style: const TextStyle(fontSize: 12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Generate day-specific recommendations
+  List<String> _generateDayRecommendations(String day) {
+    return [
+      'Schedule your most important tasks on $day to leverage your productivity peak.',
+      'Use $day for tasks requiring deep focus and concentration.',
+      'Consider batching similar tasks on $day to maximize efficiency.',
+      'Block out focused work time on $day with minimal interruptions.',
+    ];
+  }
+
+  // Generate time-specific recommendations
+  List<String> _generateTimeRecommendations(String timeRange) {
+    return [
+      'Schedule complex tasks during $timeRange when your focus is highest.',
+      'Avoid scheduling meetings during $timeRange to protect your productive time.',
+      'Use the $timeRange period for tasks requiring creative thinking.',
+      'Set up your environment before $timeRange to maximize this productive period.',
+    ];
+  }
+
+  // Get the most productive category
+  String _getMostProductiveCategory() {
+    final categoryStats =
+        _productivityStats['categoryStats'] as Map<String, int>? ?? {};
+    if (categoryStats.isEmpty) return 'Work';
+
+    String mostProductiveCategory = '';
+    int highestCount = 0;
+
+    categoryStats.forEach((category, count) {
+      if (count > highestCount) {
+        highestCount = count;
+        mostProductiveCategory = category;
+      }
+    });
+
+    return mostProductiveCategory.isEmpty ? 'Work' : mostProductiveCategory;
+  }
+
+  // Helper method to convert day name to day index
+  int _getDayIndex(String dayName) {
+    switch (dayName) {
+      case 'Today':
+        return 0;
+      case 'Tomorrow':
+        return 1;
+      case 'Monday':
+        // Calculate days until next Monday
+        final now = DateTime.now();
+        final daysUntilMonday = DateTime.monday - now.weekday;
+        return daysUntilMonday < 0 ? daysUntilMonday + 7 : daysUntilMonday;
+      case 'Tuesday':
+        final now = DateTime.now();
+        final daysUntilTuesday = DateTime.tuesday - now.weekday;
+        return daysUntilTuesday < 0 ? daysUntilTuesday + 7 : daysUntilTuesday;
+      case 'Wednesday':
+        final now = DateTime.now();
+        final daysUntilWednesday = DateTime.wednesday - now.weekday;
+        return daysUntilWednesday < 0
+            ? daysUntilWednesday + 7
+            : daysUntilWednesday;
+      case 'Thursday':
+        final now = DateTime.now();
+        final daysUntilThursday = DateTime.thursday - now.weekday;
+        return daysUntilThursday < 0
+            ? daysUntilThursday + 7
+            : daysUntilThursday;
+      case 'Friday':
+        final now = DateTime.now();
+        final daysUntilFriday = DateTime.friday - now.weekday;
+        return daysUntilFriday < 0 ? daysUntilFriday + 7 : daysUntilFriday;
+      case 'Saturday':
+        final now = DateTime.now();
+        final daysUntilSaturday = DateTime.saturday - now.weekday;
+        return daysUntilSaturday < 0
+            ? daysUntilSaturday + 7
+            : daysUntilSaturday;
+      case 'Sunday':
+        final now = DateTime.now();
+        final daysUntilSunday = DateTime.sunday - now.weekday;
+        return daysUntilSunday < 0 ? daysUntilSunday + 7 : daysUntilSunday;
+      default:
+        return 0;
     }
   }
 

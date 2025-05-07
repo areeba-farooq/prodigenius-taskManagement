@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:taskgenius/models/goal.dart';
 import 'package:taskgenius/models/task.dart';
 import 'package:taskgenius/models/notification.dart';
 
@@ -58,7 +59,41 @@ class FirestoreService {
       rethrow;
     }
   }
+// Get goals
+Stream<List<Goal>> getGoals(String userId) {
+  return _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('goals')
+      .snapshots()
+      .map((snapshot) {
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id;
+      return Goal.fromMap(data);
+    }).toList();
+  });
+}
 
+// Save goal
+Future<void> saveGoal(String userId, Goal goal) async {
+  await _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('goals')
+      .doc(goal.id)
+      .set(goal.toMap());
+}
+
+// Delete goal
+Future<void> deleteGoal(String userId, String goalId) async {
+  await _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('goals')
+      .doc(goalId)
+      .delete();
+}
   // Get all tasks for a user
 
   Stream<List<Task>> getTasks(String userId) {

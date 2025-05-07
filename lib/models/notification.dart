@@ -5,6 +5,7 @@ enum NotificationType {
   deadline, 
   digest, 
   scheduled, 
+  achievement,
 }
 class AppNotification {
   final String id;

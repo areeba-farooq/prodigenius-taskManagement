@@ -14,6 +14,7 @@ class Task {
   final int? scheduledTimeSlot;
   final String? scheduledTimeDescription;
   final DateTime? completedAt; 
+    final DateTime? createdAt; 
 
   Task({
     String? id,
@@ -28,7 +29,10 @@ class Task {
     this.scheduledTimeSlot,
     this.scheduledTimeDescription,
     this.completedAt, 
-  }) : id = id ?? const Uuid().v4();
+    DateTime? createdAt,
+  }) : id = id ?? const Uuid().v4(),
+  createdAt = createdAt ?? DateTime.now();
+
 
   Map<String, dynamic> toMap() {
     return {
@@ -44,6 +48,7 @@ class Task {
       'scheduledTimeSlot': scheduledTimeSlot,
       'scheduledTimeDescription': scheduledTimeDescription,
       'completedAt': completedAt?.millisecondsSinceEpoch,
+       'createdAt': createdAt?.millisecondsSinceEpoch,
     };
   }
 
@@ -81,7 +86,22 @@ class Task {
         return null;
       }
     }
+    DateTime parseCreatedAt() {
+      final createdAtField = map['createdAt'];
 
+      if (createdAtField == null) {
+        return DateTime.now();
+      } else if (createdAtField is DateTime) {
+        return createdAtField;
+      } else if (createdAtField is Timestamp) {
+        return createdAtField.toDate();
+      } else if (createdAtField is int) {
+        return DateTime.fromMillisecondsSinceEpoch(createdAtField);
+      } else {
+        print('Unknown date format for createdAt: $createdAtField');
+        return DateTime.now();
+      }
+    }
     // Handle different number formats
     int parseIntField(dynamic value, int defaultValue) {
       if (value is int) {
@@ -117,6 +137,7 @@ class Task {
               : null,
       scheduledTimeDescription: map['scheduledTimeDescription'],
       completedAt: parseCompletedAt(),
+       createdAt: parseCreatedAt(),
     );
   }
 
@@ -132,6 +153,7 @@ class Task {
     int? scheduledTimeSlot,
     String? scheduledTimeDescription,
     DateTime? completedAt,
+     DateTime? createdAt,
   }) {
     return Task(
       id: id,
@@ -147,6 +169,7 @@ class Task {
       scheduledTimeDescription:
           scheduledTimeDescription ?? this.scheduledTimeDescription,
       completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt, 
     );
   }
 }

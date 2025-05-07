@@ -1,11 +1,12 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:taskgenius/screens/splash_screen.dart';
-import 'package:taskgenius/services/notification_service.dart';
 import 'package:taskgenius/state/auth_provider.dart';
 import 'package:taskgenius/state/task_provider.dart';
 import 'package:taskgenius/utils/theme_switch.dart';
@@ -198,11 +199,26 @@ class _AccountScreenState extends State<AccountScreen> {
                                             context,
                                           ).primaryColor.withOpacity(0.1),
                                           backgroundImage:
-                                              user.photoUrl != null
-                                                  ? NetworkImage(user.photoUrl!)
+                                              (user.photoUrl != null &&
+                                                      user.photoUrl!.isNotEmpty)
+                                                  ? (user.photoUrl!.startsWith(
+                                                        'data:image',
+                                                      )
+                                                      ? MemoryImage(
+                                                        base64Decode(
+                                                          user.photoUrl!.split(
+                                                            ',',
+                                                          )[1],
+                                                        ),
+                                                      )
+                                                      : NetworkImage(
+                                                            user.photoUrl!,
+                                                          )
+                                                          as ImageProvider)
                                                   : null,
                                           child:
-                                              user.photoUrl == null
+                                              (user.photoUrl == null ||
+                                                      user.photoUrl!.isEmpty)
                                                   ? Text(
                                                     user.name
                                                         .substring(0, 1)
@@ -578,15 +594,8 @@ class _AccountScreenState extends State<AccountScreen> {
                   );
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.photo_camera),
-                title: const Text('Take a photo'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await _updateProfilePicture(ImageSource.camera, authProvider);
-                },
-              ),
-              if (authProvider.currentUser?.photoUrl != null)
+              if (authProvider.currentUser?.photoUrl != null &&
+                  authProvider.currentUser!.photoUrl!.isNotEmpty)
                 ListTile(
                   leading: const Icon(Icons.delete, color: Colors.red),
                   title: const Text(
@@ -624,7 +633,7 @@ class _AccountScreenState extends State<AccountScreen> {
       source: source,
       maxWidth: 512,
       maxHeight: 512,
-      imageQuality: 85,
+      imageQuality: 50,
     );
 
     if (pickedFile != null) {
@@ -633,25 +642,16 @@ class _AccountScreenState extends State<AccountScreen> {
       });
 
       try {
-        // Upload to Firebase Storage
+        // Read the file as bytes
         final File imageFile = File(pickedFile.path);
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('profile_images')
-            .child('${authProvider.currentUser!.id}.jpg');
+        final Uint8List imageBytes = await imageFile.readAsBytes();
 
-        // Upload file
-        final uploadTask = storageRef.putFile(
-          imageFile,
-          SettableMetadata(contentType: 'image/jpeg'),
-        );
+        // Convert to base64 string for Firestore storage
+        final String base64Image = base64Encode(imageBytes);
 
-        // Get download URL after upload completes
-        final snapshot = await uploadTask;
-        final downloadUrl = await snapshot.ref.getDownloadURL();
-
-        // Update user profile with new photo URL
-        await authProvider.updateProfile(photoUrl: downloadUrl);
+        // Update user profile with base64 image data directly
+        final String dataUrl = 'data:image/jpeg;base64,$base64Image';
+        await authProvider.updateProfile(photoUrl: dataUrl);
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to update profile picture: $e')),

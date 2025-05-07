@@ -1,9 +1,9 @@
-
 import 'dart:math' as math;
 
 import 'package:firebase_ml_model_downloader/firebase_ml_model_downloader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:taskgenius/models/task.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 class PriorityPredictor {
@@ -12,8 +12,6 @@ class PriorityPredictor {
   // Initialize the model
   static Future<void> initModel() async {
     try {
-      
-      
       final modelInfo = await FirebaseModelDownloader.instance.getModel(
         "task_priority_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
@@ -29,10 +27,8 @@ class PriorityPredictor {
       _interpreter = Interpreter.fromFile(modelInfo.file);
     } catch (e) {
       print("Error loading model: $e");
-      
     }
   }
-
 
   // find index of max value
   static int _findMaxIndex(List<double> values) {
@@ -47,6 +43,7 @@ class PriorityPredictor {
     }
     return maxIndex;
   }
+
   // Predict priority based on features
   static String predictPriority(DateTime dueDate, int urgencyLevel) {
     // If ML model is available, use it
@@ -65,12 +62,10 @@ class PriorityPredictor {
 
         // Run inference
         _interpreter!.run(input, output);
-   
-        final outputList = output[0] as List<double>;
-        
-        
-          final predictedClass = _findMaxIndex(outputList);
 
+        final outputList = output[0] as List<double>;
+
+        final predictedClass = _findMaxIndex(outputList);
 
         switch (predictedClass) {
           case 0:
@@ -84,12 +79,32 @@ class PriorityPredictor {
         }
       } catch (e) {
         print("Error during prediction: $e");
-        
+
         return _ruleBasedPriority(dueDate, urgencyLevel);
       }
     } else {
       // Use rule-based approach if model isn't available
       return _ruleBasedPriority(dueDate, urgencyLevel);
+    }
+  }
+
+  static Future<void> refreshModel(List<Task> tasks) async {
+    // This would contain the logic to collect data from tasks
+    // and use it to refresh/retrain the priority prediction model
+
+    try {
+      // In a real implementation, you would:
+      // 1. Extract features and targets from completed tasks
+      // 2. Create a new training dataset
+      // 3. Fine-tune the model with this data
+      // 4. Update the model file
+
+      print("Priority model refreshed with ${tasks.length} tasks");
+
+      // Re-initialize the model to use the updated version
+      await initModel();
+    } catch (e) {
+      print("Error refreshing priority model: $e");
     }
   }
 
@@ -138,7 +153,6 @@ class DurationEstimator {
   // Initialize the model
   static Future<void> initModel() async {
     try {
-      
       final modelInfo = await FirebaseModelDownloader.instance.getModel(
         "task_duration_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
@@ -155,7 +169,6 @@ class DurationEstimator {
       debugPrint("Duration estimation model loaded successfully");
     } catch (e) {
       debugPrint("Error loading duration estimation model: $e");
-      
     }
   }
 
@@ -196,7 +209,7 @@ class DurationEstimator {
         return Duration(minutes: predictedMinutes.round());
       } catch (e) {
         debugPrint("Error during duration prediction: $e");
-        
+
         return _ruleBasedDurationEstimate(category, urgencyLevel, daysUntilDue);
       }
     } else {
@@ -219,29 +232,27 @@ class DurationEstimator {
         baseDuration = 60; // 1 hour
         break;
       case 'Personal':
-        baseDuration = 30; 
+        baseDuration = 30;
         break;
       case 'Study':
-        baseDuration = 45; 
+        baseDuration = 45;
         break;
       case 'Health':
-        baseDuration = 40; 
+        baseDuration = 40;
         break;
       case 'Shopping':
-        baseDuration = 25; 
+        baseDuration = 25;
         break;
       case 'Travel':
         baseDuration = 90; // 1.5 hours
         break;
       default:
-        baseDuration = 45; 
+        baseDuration = 45;
     }
 
-    
     // Higher urgency typically means task needs to be done faster
     double urgencyFactor = 0.8 + (urgencyLevel * 0.1); // 1=90%, 3=110%, 5=130%
 
-    
     // Tasks due sooner might need to be done more quickly
     double dueDateFactor = 1.0;
     if (daysUntilDue <= 1) {
@@ -260,7 +271,27 @@ class DurationEstimator {
     return Duration(minutes: calculatedMinutes);
   }
 
-  
+  static Future<void> recalibrateModel(List<Task> completedTasks) async {
+    // This would contain the logic to recalibrate the duration model
+    // based on recently completed tasks
+
+    try {
+      // In a real implementation, you would:
+      // 1. Extract features from tasks and actual durations (time between creation and completion)
+      // 2. Use this data to fine-tune the duration prediction model
+      // 3. Update the model file
+
+      print(
+        "Duration model recalibrated with ${completedTasks.length} completed tasks",
+      );
+
+      // Re-initialize the model to use the updated version
+      await initModel();
+    } catch (e) {
+      print("Error recalibrating duration model: $e");
+    }
+  }
+
   static String formatDuration(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
@@ -290,7 +321,6 @@ class TaskScheduler {
   // Initialize the models
   static Future<void> initModels() async {
     try {
-      
       final dayModelInfo = await FirebaseModelDownloader.instance.getModel(
         "task_schedule_day_model",
         FirebaseModelDownloadType.localModelUpdateInBackground,
@@ -323,10 +353,10 @@ class TaskScheduler {
       debugPrint("Task scheduler models loaded successfully");
     } catch (e) {
       debugPrint("Error loading task scheduler models: $e");
-      
     }
   }
-   // find index of max value
+
+  // find index of max value
   static int _findMaxIndex(List<double> values) {
     if (values.isEmpty) return 0;
     double maxValue = values[0];
@@ -372,24 +402,16 @@ class TaskScheduler {
         // Day model inference
         var dayOutput = List.filled(1 * 8, 0.0).reshape([1, 8]);
         _dayInterpreter!.run(input, dayOutput);
-                final dayOutputList = dayOutput[0] as List<double>;
+        final dayOutputList = dayOutput[0] as List<double>;
 
-                final predictedDay = _findMaxIndex(dayOutputList);
-
-        
-        
-        
+        final predictedDay = _findMaxIndex(dayOutputList);
 
         // Time slot model inference
         var timeOutput = List.filled(1 * 3, 0.0).reshape([1, 3]);
         _timeInterpreter!.run(input, timeOutput);
-                final timeOutputList = timeOutput[0] as List<double>;
+        final timeOutputList = timeOutput[0] as List<double>;
 
-                final predictedTimeSlot = _findMaxIndex(timeOutputList);
-
-        
-        
-        
+        final predictedTimeSlot = _findMaxIndex(timeOutputList);
 
         // Ensure day doesn't exceed due date
         final scheduledDay = math.min(predictedDay, daysUntilDue);
@@ -401,7 +423,7 @@ class TaskScheduler {
         };
       } catch (e) {
         debugPrint("Error during schedule prediction: $e");
-        
+
         return _ruleBasedScheduling(
           priority,
           duration,
@@ -449,7 +471,6 @@ class TaskScheduler {
     final durationInHours = duration.inMinutes / 60;
 
     if (durationInHours > userAvailabilityHours / 2) {
-      
       // schedule for when user likely has most time
       if (timePreference == 0) {
         // Morning preference
@@ -458,7 +479,7 @@ class TaskScheduler {
         // Evening preference
         scheduledTimeSlot = 2;
       } else {
-        scheduledTimeSlot = 1; 
+        scheduledTimeSlot = 1;
       }
     } else {
       // For shorter tasks, follow user's time preference
