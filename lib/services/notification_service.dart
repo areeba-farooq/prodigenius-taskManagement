@@ -33,7 +33,7 @@ class NotificationService {
   Future<void> initialize() async {
     // Initialize for Android
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('assets/playstore-icon.png');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     // Initialize for iOS
     final DarwinInitializationSettings initializationSettingsIOS =
@@ -223,7 +223,7 @@ class NotificationService {
           channelDescription: 'Notifications for upcoming tasks',
           importance: Importance.max,
           priority: Priority.max,
-          icon: 'assets/playstore-icon.png',
+          icon: '@mipmap/ic_launcher',
           color: Color(_getPriorityColor(task.priority)),
           ledColor: Color(_getPriorityColor(task.priority)),
           ledOnMs: 1000,
@@ -368,7 +368,7 @@ class NotificationService {
           channelDescription: 'Notifications for scheduled tasks',
           importance: Importance.high,
           priority: Priority.high,
-          icon: 'assets/playstore-icon.png',
+          icon: '@mipmap/ic_launcher',
           color: Color(0xFF4CAF50),
         );
 
@@ -512,7 +512,7 @@ class NotificationService {
           channelDescription: 'Notifications for task deadlines',
           importance: Importance.high,
           priority: Priority.high,
-          icon: 'assets/playstore-icon.png',
+          icon: '@mipmap/ic_launcher',
         );
 
     final DarwinNotificationDetails iOSDetails = DarwinNotificationDetails();
